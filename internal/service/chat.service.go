@@ -1,0 +1,49 @@
+package service
+
+import (
+	"arnobot-shared/db"
+	"arnobot-shared/pkg/errs"
+	"context"
+	"log/slog"
+
+	"github.com/nicklaw5/helix/v2"
+)
+
+type ChatService struct {
+	helix *helix.Client
+  querier db.Querier
+  logger *slog.Logger
+}
+
+type TwitchUserIDGetter interface {
+  GetUserID() string
+}
+
+func (s *ChatService) GetDefaultBot(ctx context.Context) (*db.TwitchDefaultBot, error) {
+  defaultBot, err := s.querier.TwitchDefaultBotGet(ctx)
+  if err != nil {
+    s.logger.Error("cannot get default bot", "err", err)
+    return nil, errs.ErrInternal
+  }
+
+  return &defaultBot, nil
+}
+
+func (s *ChatService) SubscribeChannelChatMessage(ctx context.Context, broadcaster TwitchUserIDGetter) {
+  s.helix.CreateEventSubSubscription(&helix.EventSubSubscription{
+    Type: "channel.chat.message",
+    Version: "1",
+    Condition: helix.EventSubCondition{
+      BroadcasterUserID: broadcaster.GetUserID(),
+      UserID: "",
+    },
+    Transport: helix.EventSubTransport{
+      Method: "webhook",
+      Callback: "tunnel.arnokay.com/",
+      Secret: "secret-test",
+    },
+  })
+}
+
+func (s *ChatService) TwitchMsgToSystemMsg(msg helix.EventSubChannelChatMessageEvent) {
+}
