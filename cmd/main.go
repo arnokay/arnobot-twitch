@@ -59,7 +59,7 @@ func main() {
 	app.apiControllers = &apiController.Contollers{
 		RegisterController: apiController.NewRegisterController(),
 	}
-	app.Start()
+	// app.Start()
 }
 
 func openMB() *nats.Conn {
