@@ -1,9 +1,10 @@
 package service
 
 import (
-  "arnobot-shared/service"
+	"arnobot-shared/service"
 )
 
 type Services struct {
-  AuthModuleService *service.AuthModuleService
+	AuthModuleService *service.AuthModuleService
+	HelixManager      *service.HelixManager
 }
