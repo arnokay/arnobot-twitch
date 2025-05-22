@@ -8,6 +8,7 @@ import (
 const (
 	ENV_DB_DSN    = "MB_URL"
 	ENV_WH_SECRET = "WH_SECRET"
+	ENV_BASE_URL  = "BASE_URL"
 )
 
 type config struct {
@@ -17,7 +18,8 @@ type config struct {
 }
 
 type GlobalConfig struct {
-	LogLevel int
+	LogLevel  int
+	BaseURL   string
 }
 
 type MBConfig struct {
@@ -36,6 +38,7 @@ func Load() *config {
 	flag.StringVar(&Config.MB.URL, "mb-url", os.Getenv(ENV_DB_DSN), "Message Broker URL")
 	flag.IntVar(&Config.Global.LogLevel, "log-level", Config.Global.LogLevel, "Minimal Log Level (default: -4)")
 	flag.StringVar(&Config.Webhooks.Secret, "wh-secret", os.Getenv(ENV_WH_SECRET), "secrett for subscribing to webhooks")
+	flag.StringVar(&Config.Global.BaseURL, "base-url", os.Getenv(ENV_BASE_URL), "public url")
 
 	flag.Parse()
 
