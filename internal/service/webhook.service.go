@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"slices"
 
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
@@ -35,6 +36,8 @@ type WebhookService struct {
 	twitchService *TwitchService
 
 	logger *slog.Logger
+
+	webhookToScopes map[string][]string
 }
 
 func NewWebhookService(
@@ -43,17 +46,69 @@ func NewWebhookService(
 ) *WebhookService {
 	logger := applog.NewServiceLogger("webhook-service")
 
+	webhooksToScopes := map[string][]string{
+		helix.EventSubTypeChannelChatMessage: {"user:read:chat"},
+	}
+
 	return &WebhookService{
-		helixManager:  helixManager,
-		twitchService: twitchService,
-		logger:        logger,
+		helixManager:    helixManager,
+		twitchService:   twitchService,
+		logger:          logger,
+		webhookToScopes: webhooksToScopes,
 	}
 }
 
-func (s *WebhookService) SubscribeChannelChat(ctx context.Context, botProvider data.AuthProvider, broadcasterID string) error {
+func (s *WebhookService) canSubscribe(
+	ctx context.Context,
+	botProvider data.AuthProvider,
+	event string,
+) error {
+	requiredScopes, ok := s.webhookToScopes[event]
+	if !ok {
+		return nil
+	}
+
+	missingScopes := make([]string, len(requiredScopes))
+
+	for _, scope := range requiredScopes {
+		if !slices.Contains(botProvider.Scopes, scope) {
+			missingScopes = append(missingScopes, scope)
+		}
+	}
+
+	if len(missingScopes) != 0 {
+		s.logger.ErrorContext(
+			ctx,
+			"cannot subscribe to channel.chat.message, missing scope",
+			"botID", botProvider.ProviderUserID,
+			"botScopes", botProvider.Scopes,
+			"webhookScopes", requiredScopes,
+			"missingScopes", missingScopes,
+		)
+		return errs.New(
+			errs.CodeForbidden,
+			fmt.Sprintf("cannot subscribe user to %s because user missing scopes: %v", event, missingScopes),
+			nil,
+		)
+	}
+
+	return nil
+}
+
+func (s *WebhookService) SubscribeChannelChatMessage(
+	ctx context.Context,
+	botProvider data.AuthProvider,
+	broadcasterID string,
+) error {
+	event := helix.EventSubTypeChannelChatMessage
+
+	if err := s.canSubscribe(ctx, botProvider, event); err != nil {
+		return err
+	}
+
 	client := s.helixManager.GetByProvider(ctx, botProvider)
 
-	callbackURL, err := GetCallbackURL(helix.EventSubTypeChannelChatMessage)
+	callbackURL, err := GetCallbackURL(event)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "cannot create callback url", "err", err)
 		return errs.ErrInternal
@@ -76,6 +131,7 @@ func (s *WebhookService) SubscribeChannelChat(ctx context.Context, botProvider d
 		s.logger.ErrorContext(
 			ctx,
 			"cannot create subscription",
+			"err", err,
 			"event", helix.EventSubTypeChannelChatMessage,
 			"botID", botProvider.ProviderUserID,
 			"broadcasterID", broadcasterID,
@@ -104,7 +160,7 @@ func (s *WebhookService) Subscribe(ctx context.Context, botProvider data.AuthPro
 		// TODO: implement
 	}
 
-	err = s.SubscribeChannelChat(ctx, botProvider, broadcasterID)
+	err = s.SubscribeChannelChatMessage(ctx, botProvider, broadcasterID)
 	if err != nil {
 		return err
 	}
