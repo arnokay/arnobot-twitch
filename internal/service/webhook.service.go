@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -16,21 +17,6 @@ import (
 	"arnobot-twitch/internal/config"
 )
 
-func GetCallbackURL(event string) (*url.URL, error) {
-	u := url.URL{
-		Host:   config.Config.Global.BaseURL,
-		Scheme: "https",
-	}
-	switch event {
-	case helix.EventSubTypeChannelChatMessage:
-		u.Path = "/twitch/callback/channel-chat-message"
-	default:
-		return nil, fmt.Errorf("cannot create url, unknown event: %s", event)
-	}
-
-	return &u, nil
-}
-
 type WebhookService struct {
 	helixManager  *service.HelixManager
 	twitchService *TwitchService
@@ -38,6 +24,7 @@ type WebhookService struct {
 	logger *slog.Logger
 
 	webhookToScopes map[string][]string
+	eventToCallback map[string]string
 }
 
 func NewWebhookService(
@@ -50,11 +37,16 @@ func NewWebhookService(
 		helix.EventSubTypeChannelChatMessage: {"user:read:chat"},
 	}
 
+	eventToCallback := map[string]string{
+		helix.EventSubTypeChannelChatMessage: "/twitch/callback/channel-chat-message",
+	}
+
 	return &WebhookService{
 		helixManager:    helixManager,
 		twitchService:   twitchService,
 		logger:          logger,
 		webhookToScopes: webhooksToScopes,
+		eventToCallback: eventToCallback,
 	}
 }
 
@@ -108,7 +100,7 @@ func (s *WebhookService) SubscribeChannelChatMessage(
 
 	client := s.helixManager.GetByProvider(ctx, botProvider)
 
-	callbackURL, err := GetCallbackURL(event)
+	callbackURL, err := s.getCallbackURL(event)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "cannot create callback url", "err", err)
 		return errs.ErrInternal
@@ -166,4 +158,19 @@ func (s *WebhookService) Subscribe(ctx context.Context, botProvider data.AuthPro
 	}
 
 	return nil
+}
+
+func (s *WebhookService) getCallbackURL(event string) (*url.URL, error) {
+	u := url.URL{
+		Host:   config.Config.Global.BaseURL,
+		Scheme: "https",
+	}
+	path, ok := s.eventToCallback[event]
+	if !ok {
+		return nil, fmt.Errorf("no callback for specified event: %s", event)
+	}
+
+	u.Path = path
+
+	return &u, nil
 }
