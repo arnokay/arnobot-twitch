@@ -23,13 +23,12 @@ type application struct {
 	logger *slog.Logger
 
 	msgBroker *nats.Conn
+	api       *echo.Echo
 
 	apiControllers *apiController.Contollers
 	apiMiddlewares *apiMiddleware.Middlewares
 
 	services *service.Services
-
-	api *echo.Echo
 }
 
 func main() {
@@ -57,7 +56,7 @@ func main() {
 	)
 
 	app.apiControllers = &apiController.Contollers{
-		RegisterController: apiController.NewRegisterController(),
+		RegisterController: apiController.NewRegisterController(app.apiMiddlewares),
 	}
 	// app.Start()
 }
