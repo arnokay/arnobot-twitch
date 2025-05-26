@@ -48,6 +48,11 @@ func main() {
 	// load services
 	app.services = &service.Services{
 		AuthModuleService: sharedService.NewAuthModuleService(app.msgBroker),
+		HelixManager: sharedService.NewHelixManager(
+			app.services.AuthModuleService,
+			config.Config.Twitch.ClientID,
+			config.Config.Twitch.ClientSecret,
+		),
 	}
 
 	// load api middlewares

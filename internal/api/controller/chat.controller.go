@@ -26,6 +26,11 @@ func NewChatController() *ChannelWebhookController {
 	}
 }
 
+func (c *ChannelWebhookController) Routes(parentGroup *echo.Group) {
+  g := parentGroup.Group("/callback/twitch", c.Middlewares.VerifyTwitchWebhook)
+  g.POST("/channel-chat-message", c.ChannelChatMessageHandler)
+}
+
 func (c *ChannelWebhookController) ChannelChatMessageHandler(ctx echo.Context) error {
 	var event helix.EventSubChannelChatMessageEvent
 	err := ctx.Bind(&event)

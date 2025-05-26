@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -38,7 +37,7 @@ func NewWebhookService(
 	}
 
 	eventToCallback := map[string]string{
-		helix.EventSubTypeChannelChatMessage: "/twitch/callback/channel-chat-message",
+		helix.EventSubTypeChannelChatMessage: "/v1/twitch/callback/channel-chat-message",
 	}
 
 	return &WebhookService{

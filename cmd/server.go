@@ -138,6 +138,7 @@ func startAPIServer(a *application) error {
 	a.api = e
 
 	e.Use(middlewares.AttachTraceID)
+  e.Use(middlewares.AuthMiddlewares.SessionGetOwner)
 
 	mainGroup := e.Group("/v1")
 	a.apiControllers.Routes(mainGroup)
