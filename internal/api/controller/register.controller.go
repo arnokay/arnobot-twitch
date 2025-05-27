@@ -5,6 +5,8 @@ import (
 
 	"arnobot-shared/appctx"
 	"arnobot-shared/applog"
+	"arnobot-shared/data"
+	sharedService "arnobot-shared/service"
 	"github.com/labstack/echo/v4"
 
 	"arnobot-twitch/internal/api/middleware"
@@ -16,14 +18,16 @@ type RegisterController struct {
 
 	middlewares *middleware.Middlewares
 
-	webhookService *service.WebhookService
-	botService     *service.BotService
+	webhookService    *service.WebhookService
+	botService        *service.BotService
+	authModuleService *sharedService.AuthModuleService
 }
 
 func NewRegisterController(
 	middlewares *middleware.Middlewares,
 	webhookService *service.WebhookService,
 	botService *service.BotService,
+	authModuleService *sharedService.AuthModuleService,
 ) *RegisterController {
 	logger := applog.NewServiceLogger("register-controller")
 
@@ -32,8 +36,9 @@ func NewRegisterController(
 
 		middlewares: middlewares,
 
-		webhookService: webhookService,
-    botService: botService,
+		webhookService:    webhookService,
+		botService:        botService,
+		authModuleService: authModuleService,
 	}
 }
 
@@ -43,7 +48,23 @@ func (c *RegisterController) Routes(parentGroup *echo.Group) {
 }
 
 func (c *RegisterController) Register(ctx echo.Context) error {
-	_ = appctx.GetUser(ctx.Request().Context())
+	user := appctx.GetUser(ctx.Request().Context())
+
+	bot, err := c.botService.SelectedBotGet(ctx.Request().Context(), user.ID)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.authModuleService.AuthProviderGet(ctx.Request().Context(), data.AuthProviderGet{
+		ProviderUserID: bot.TwitchUserID,
+		Provider:       "twitch",
+	})
+	if err != nil {
+		return err
+	}
+
+	// TODO: i need to get twitch id of a user, right now im not storing it anywhere
+	// err := c.webhookService.Subscribe(ctx.Request().Context(), *botProvider, broadcasterID string)
 
 	return nil
 }

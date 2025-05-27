@@ -51,7 +51,7 @@ func (s *BotService) SelectedBotGet(ctx context.Context, userID int32) (*data.Tw
 	fromDB, err := s.storage.Query(ctx).TwitchSelectedBotGet(ctx, userID)
 	if err != nil {
 		s.logger.DebugContext(ctx, "there is no selected bot", "err", err)
-		return nil, errs.ErrNotFound
+		return nil, errs.New(errs.CodeNotFound, "Selected Bot Not Found", err)
 	}
 	bot := data.NewTwitchSelectedBotFromDB(fromDB)
 

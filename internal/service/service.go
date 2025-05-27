@@ -7,5 +7,4 @@ import (
 type Services struct {
 	AuthModuleService *service.AuthModuleService
 	HelixManager      *service.HelixManager
-	RegisterService   *RegisterService
 }
