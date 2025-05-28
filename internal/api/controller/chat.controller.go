@@ -15,19 +15,21 @@ import (
 type ChannelWebhookController struct {
 	logger *slog.Logger
 
-	Middlewares *middleware.Middlewares
+	middlewares *middleware.Middlewares
 }
 
-func NewChatController() *ChannelWebhookController {
+func NewChatController(middlewares *middleware.Middlewares) *ChannelWebhookController {
 	logger := applog.NewServiceLogger("ChatController")
 
 	return &ChannelWebhookController{
 		logger: logger,
+
+    middlewares: middlewares,
 	}
 }
 
 func (c *ChannelWebhookController) Routes(parentGroup *echo.Group) {
-  g := parentGroup.Group("/callback/twitch", c.Middlewares.VerifyTwitchWebhook)
+	g := parentGroup.Group("/callback", c.middlewares.VerifyTwitchWebhook)
   g.POST("/channel-chat-message", c.ChannelChatMessageHandler)
 }
 

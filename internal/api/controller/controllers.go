@@ -1,6 +1,8 @@
 package controller
 
-import "github.com/labstack/echo/v4"
+import (
+	"github.com/labstack/echo/v4"
+)
 
 type Contollers struct {
 	ChannelWebhookController *ChannelWebhookController
@@ -9,5 +11,5 @@ type Contollers struct {
 
 func (c *Contollers) Routes(parentGroup *echo.Group) {
 	c.RegisterController.Routes(parentGroup)
-	c.ChannelWebhookController
+	c.ChannelWebhookController.Routes(parentGroup)
 }

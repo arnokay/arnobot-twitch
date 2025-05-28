@@ -50,21 +50,23 @@ func (c *RegisterController) Routes(parentGroup *echo.Group) {
 func (c *RegisterController) Register(ctx echo.Context) error {
 	user := appctx.GetUser(ctx.Request().Context())
 
-	bot, err := c.botService.SelectedBotGet(ctx.Request().Context(), user.ID)
-	if err != nil {
-		return err
-	}
-
-	_, err = c.authModuleService.AuthProviderGet(ctx.Request().Context(), data.AuthProviderGet{
-		ProviderUserID: bot.TwitchUserID,
-		Provider:       "twitch",
+	userProvider, err := c.authModuleService.AuthProviderGet(ctx.Request().Context(), data.AuthProviderGet{
+		UserID:   &user.ID,
+		Provider: "twitch",
 	})
 	if err != nil {
 		return err
 	}
 
-	// TODO: i need to get twitch id of a user, right now im not storing it anywhere
-	// err := c.webhookService.Subscribe(ctx.Request().Context(), *botProvider, broadcasterID string)
+	bot, err := c.botService.SelectedBotGet(ctx.Request().Context(), user.ID)
+	if err != nil {
+		return err
+	}
+
+	err = c.webhookService.SubscribeChannelChatMessageBot(ctx.Request().Context(), bot.TwitchUserID, userProvider.ProviderUserID)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

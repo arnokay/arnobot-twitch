@@ -37,7 +37,7 @@ func NewWebhookService(
 	}
 
 	eventToCallback := map[string]string{
-		helix.EventSubTypeChannelChatMessage: "/v1/twitch/callback/channel-chat-message",
+		helix.EventSubTypeChannelChatMessage: "/v1/callback/channel-chat-message",
 	}
 
 	return &WebhookService{
@@ -86,6 +86,49 @@ func (s *WebhookService) canSubscribe(
 	return nil
 }
 
+func (s *WebhookService) SubscribeChannelChatMessageBot(
+	ctx context.Context,
+	botID,
+	broadcasterID string,
+) error {
+	event := helix.EventSubTypeChannelChatMessage
+
+	client := s.helixManager.GetApp(ctx)
+
+	callbackURL, err := s.getCallbackURL(event)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "cannot create callback url", "err", err)
+		return errs.ErrNotImplemented
+	}
+
+	_, err = client.CreateEventSubSubscription(&helix.EventSubSubscription{
+		Type:    helix.EventSubTypeChannelChatMessage,
+		Version: "1",
+		Condition: helix.EventSubCondition{
+			BroadcasterUserID: broadcasterID,
+			UserID:            botID,
+		},
+		Transport: helix.EventSubTransport{
+			Method:   "webhook",
+			Callback: callbackURL.String(),
+			Secret:   config.Config.Webhooks.Secret,
+		},
+	})
+	if err != nil {
+		s.logger.ErrorContext(
+			ctx,
+			"cannot create subscription",
+			"err", err,
+			"event", helix.EventSubTypeChannelChatMessage,
+			"botID", botID,
+			"broadcasterID", broadcasterID,
+		) 
+		return errs.ErrExternal
+	}
+
+	return nil
+}
+
 func (s *WebhookService) SubscribeChannelChatMessage(
 	ctx context.Context,
 	botProvider data.AuthProvider,
@@ -102,7 +145,7 @@ func (s *WebhookService) SubscribeChannelChatMessage(
 	callbackURL, err := s.getCallbackURL(event)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "cannot create callback url", "err", err)
-		return errs.ErrInternal
+		return errs.ErrNotImplemented
 	}
 
 	_, err = client.CreateEventSubSubscription(&helix.EventSubSubscription{
