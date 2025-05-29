@@ -58,10 +58,11 @@ func main() {
 
 	// load services
 	services := &service.Services{}
+	services.TransactionService = sharedService.NewPgxTransactionService(app.db)
 	services.AuthModuleService = sharedService.NewAuthModuleService(app.msgBroker)
 	services.BotService = service.NewBotService(app.storage)
 	services.HelixManager = sharedService.NewHelixManager(
-		app.services.AuthModuleService,
+		services.AuthModuleService,
 		config.Config.Twitch.ClientID,
 		config.Config.Twitch.ClientSecret,
 	)
@@ -80,6 +81,7 @@ func main() {
 			app.services.WebhookService,
 			app.services.BotService,
 			app.services.AuthModuleService,
+			app.services.TransactionService,
 		),
 		ChannelWebhookController: apiController.NewChatController(app.apiMiddlewares),
 	}

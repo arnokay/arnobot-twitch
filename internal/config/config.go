@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	ENV_MB_URL        = "MB_URL"
-	ENV_DB_DSN        = "DB_DSN"
-	ENV_WH_SECRET     = "WH_SECRET"
-	ENV_BASE_URL      = "BASE_URL"
-	ENV_PORT          = "PORT"
-	ENV_CLIENT_ID     = "CLIENT_ID"
-	ENV_CLIENT_SECRET = "SECRET"
+	ENV_MB_URL               = "MB_URL"
+	ENV_DB_DSN               = "DB_DSN"
+	ENV_TWITCH_WH_SECRET     = "TWITCH_WH_SECRET"
+	ENV_BASE_URL             = "BASE_URL"
+	ENV_PORT                 = "PORT"
+	ENV_TWITCH_CLIENT_ID     = "TWITCH_CLIENT_ID"
+	ENV_TWITCH_CLIENT_SECRET = "TWITCH_CLIENT_SECRET"
 )
 
 type config struct {
@@ -56,7 +56,11 @@ type Webhooks struct {
 var Config *config
 
 func Load() *config {
-	Config = &config{}
+	Config = &config{
+		Global: GlobalConfig{
+			LogLevel: -4,
+		},
+	}
 
 	if os.Getenv(ENV_PORT) != "" {
 		port, err := strconv.Atoi(os.Getenv(ENV_PORT))
@@ -66,11 +70,12 @@ func Load() *config {
 
 	flag.StringVar(&Config.MB.URL, "mb-url", os.Getenv(ENV_MB_URL), "Message Broker URL")
 	flag.IntVar(&Config.Global.LogLevel, "log-level", Config.Global.LogLevel, "Minimal Log Level (default: -4)")
-	flag.StringVar(&Config.Webhooks.Secret, "wh-secret", os.Getenv(ENV_WH_SECRET), "secret for subscribing to webhooks")
+	flag.StringVar(&Config.Webhooks.Secret, "wh-secret", os.Getenv(ENV_TWITCH_WH_SECRET), "secret for subscribing to webhooks")
 	flag.StringVar(&Config.Global.BaseURL, "base-url", os.Getenv(ENV_BASE_URL), "public url")
 	flag.IntVar(&Config.Global.Port, "port", Config.Global.Port, "http port")
-	flag.StringVar(&Config.Twitch.ClientID, "client-id", os.Getenv(ENV_CLIENT_ID), "twitch client id")
-	flag.StringVar(&Config.Twitch.ClientSecret, "client-secret", os.Getenv(ENV_CLIENT_SECRET), "twitch secret")
+	flag.StringVar(&Config.Twitch.ClientID, "t-client-id", os.Getenv(ENV_TWITCH_CLIENT_ID), "twitch client id")
+	flag.StringVar(&Config.Twitch.ClientSecret, "t-client-secret", os.Getenv(ENV_TWITCH_CLIENT_SECRET), "twitch client id")
+	flag.StringVar(&Config.Webhooks.Secret, "t-wh-client-secret", os.Getenv(ENV_TWITCH_CLIENT_SECRET), "twitch secret")
 	flag.StringVar(&Config.DB.DSN, "db-dsn", os.Getenv(ENV_DB_DSN), "DB DSN")
 	flag.IntVar(&Config.DB.MaxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.IntVar(&Config.DB.MaxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")

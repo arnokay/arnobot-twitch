@@ -8,7 +8,6 @@ import (
 	"arnobot-shared/data"
 	"arnobot-shared/pkg/errs"
 	"arnobot-shared/service"
-
 	"github.com/nicklaw5/helix/v2"
 )
 
@@ -28,6 +27,29 @@ func NewTwitchService(
 	}
 }
 
+func (s *TwitchService) AppSendChannelMessage(
+	ctx context.Context,
+	botID string,
+	broadcasterID string,
+	message string,
+	replyTo string,
+) error {
+	client := s.helixManager.GetApp(ctx)
+
+	_, err := client.SendChatMessage(&helix.SendChatMessageParams{
+		BroadcasterID:        broadcasterID,
+		SenderID:             botID,
+		Message:              message,
+		ReplyParentMessageID: replyTo,
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "cannot send message to chat", "err", err, "broadcasterID", broadcasterID, "botID", botID, "message", message, "replyTo", replyTo)
+		return errs.ErrExternal
+	}
+
+	return nil
+}
+
 func (s *TwitchService) GetBotChannelRole(
 	ctx context.Context,
 	botProvider data.AuthProvider,
@@ -40,12 +62,12 @@ func (s *TwitchService) GetBotChannelRole(
 	})
 	if err != nil {
 		s.logger.ErrorContext(
-      ctx, 
-      "cannot request chat badges", 
-      "broadcasterID", broadcasterID, 
-      "botID", botProvider.ProviderUserID, 
-      "err", err,
-    )
+			ctx,
+			"cannot request chat badges",
+			"broadcasterID", broadcasterID,
+			"botID", botProvider.ProviderUserID,
+			"err", err,
+		)
 		return "", errs.ErrExternal
 	}
 

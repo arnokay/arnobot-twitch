@@ -9,8 +9,10 @@ import (
 
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
+	"arnobot-shared/pkg/assert"
 	"arnobot-shared/pkg/errs"
 	"arnobot-shared/service"
+
 	"github.com/nicklaw5/helix/v2"
 
 	"arnobot-twitch/internal/config"
@@ -100,8 +102,18 @@ func (s *WebhookService) SubscribeChannelChatMessageBot(
 		s.logger.ErrorContext(ctx, "cannot create callback url", "err", err)
 		return errs.ErrNotImplemented
 	}
+  fmt.Println(client.GetAppAccessToken())
 
-	_, err = client.CreateEventSubSubscription(&helix.EventSubSubscription{
+  // res, err := client.GetEventSubSubscriptions(&helix.EventSubSubscriptionsParams{})
+  // assert.NoError(err, "oke")
+  // fmt.Println(res.Data)
+  // for _, sub := range res.Data.EventSubSubscriptions {
+  //   fmt.Println("here:")
+  //   fmt.Println(sub)
+  // }
+  // assert.Assert(false, "kek")
+  //
+  res, err := client.CreateEventSubSubscription(&helix.EventSubSubscription{
 		Type:    helix.EventSubTypeChannelChatMessage,
 		Version: "1",
 		Condition: helix.EventSubCondition{
@@ -114,6 +126,7 @@ func (s *WebhookService) SubscribeChannelChatMessageBot(
 			Secret:   config.Config.Webhooks.Secret,
 		},
 	})
+  fmt.Println(res)
 	if err != nil {
 		s.logger.ErrorContext(
 			ctx,
@@ -147,6 +160,9 @@ func (s *WebhookService) SubscribeChannelChatMessage(
 		s.logger.ErrorContext(ctx, "cannot create callback url", "err", err)
 		return errs.ErrNotImplemented
 	}
+
+  fmt.Println(callbackURL)
+  assert.Assert(false, "kek")
 
 	_, err = client.CreateEventSubSubscription(&helix.EventSubSubscription{
 		Type:    helix.EventSubTypeChannelChatMessage,

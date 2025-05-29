@@ -3,6 +3,7 @@ package middleware
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"arnobot-shared/applog"
 	"arnobot-shared/middlewares"
 	"arnobot-shared/pkg/errs"
+
 	"github.com/labstack/echo/v4"
 	"github.com/nicklaw5/helix/v2"
 
@@ -35,6 +37,7 @@ func New(
 
 func (m *Middlewares) VerifyTwitchWebhook(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
+    fmt.Println("kek")
 		// TODO: handle length of request body
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
@@ -42,7 +45,6 @@ func (m *Middlewares) VerifyTwitchWebhook(next echo.HandlerFunc) echo.HandlerFun
 			return errs.ErrUnauthorized
 		}
 		c.Request().Body.Close()
-
 		c.Request().Body = io.NopCloser(bytes.NewReader(body))
 
 		// TODO: maybe move to db per webhook?
@@ -72,6 +74,7 @@ func (m *Middlewares) VerifyTwitchWebhook(next echo.HandlerFunc) echo.HandlerFun
 		}
 
 		if event.Challenge != "" {
+      m.logger.DebugContext(c.Request().Context(), "confirmed challenge", "sub", event.Subscription.ID, "subType", event.Subscription.Type)
 			return c.String(http.StatusOK, event.Challenge)
 		}
 
