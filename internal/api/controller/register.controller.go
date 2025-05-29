@@ -55,14 +55,6 @@ func (c *RegisterController) Routes(parentGroup *echo.Group) {
 func (c *RegisterController) Register(ctx echo.Context) error {
 	user := appctx.GetUser(ctx.Request().Context())
 
-	userProvider, err := c.authModuleService.AuthProviderGet(ctx.Request().Context(), data.AuthProviderGet{
-		UserID:   &user.ID,
-		Provider: "twitch",
-	})
-	if err != nil {
-		return err
-	}
-
 	txCtx, err := c.transactionService.Begin(ctx.Request().Context())
 	defer c.transactionService.Rollback(txCtx)
 	if err != nil {
@@ -93,6 +85,13 @@ func (c *RegisterController) Register(ctx echo.Context) error {
 			if err != nil {
 				return err
 			}
+			userProvider, err := c.authModuleService.AuthProviderGet(ctx.Request().Context(), data.AuthProviderGet{
+				UserID:   &user.ID,
+				Provider: "twitch",
+			})
+			if err != nil {
+				return err
+			}
 			bot, err = c.botService.BotCreate(txCtx, data.TwitchBotCreate{
 				UserID:        user.ID,
 				BotID:         defaultBot.BotID,
@@ -113,7 +112,7 @@ func (c *RegisterController) Register(ctx echo.Context) error {
 		return err
 	}
 
-	err = c.webhookService.SubscribeChannelChatMessageBot(ctx.Request().Context(), selectedBot.BotID, userProvider.ProviderUserID)
+	err = c.webhookService.SubscribeChannelChatMessageBot(ctx.Request().Context(), selectedBot.BotID, selectedBot.BroadcasterID)
 	if err != nil {
 		return err
 	}
