@@ -82,6 +82,7 @@ func main() {
 			app.services.BotService,
 			app.services.AuthModuleService,
 			app.services.TransactionService,
+      app.services.TwitchService,
 		),
 		ChannelWebhookController: apiController.NewChatController(app.apiMiddlewares),
 	}

@@ -24,6 +24,7 @@ type RegisterController struct {
 	botService         *service.BotService
 	authModuleService  *sharedService.AuthModuleService
 	transactionService sharedService.ITransactionService
+	twitchService      *service.TwitchService
 }
 
 func NewRegisterController(
@@ -32,6 +33,7 @@ func NewRegisterController(
 	botService *service.BotService,
 	authModuleService *sharedService.AuthModuleService,
 	transactionService sharedService.ITransactionService,
+	twitchService *service.TwitchService,
 ) *RegisterController {
 	logger := applog.NewServiceLogger("register-controller")
 
@@ -44,6 +46,7 @@ func NewRegisterController(
 		botService:         botService,
 		authModuleService:  authModuleService,
 		transactionService: transactionService,
+		twitchService:      twitchService,
 	}
 }
 
@@ -116,6 +119,8 @@ func (c *RegisterController) Register(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	c.twitchService.AppSendChannelMessage(ctx.Request().Context(), selectedBot.BotID, selectedBot.BroadcasterID, "hi!", "")
 
 	return nil
 }
