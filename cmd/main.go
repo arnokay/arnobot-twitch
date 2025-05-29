@@ -57,17 +57,17 @@ func main() {
 	app.msgBroker = mbConn
 
 	// load services
-	app.services = &service.Services{
-		AuthModuleService: sharedService.NewAuthModuleService(app.msgBroker),
-		BotService:        service.NewBotService(app.storage),
-	}
-	app.services.HelixManager = sharedService.NewHelixManager(
+	services := &service.Services{}
+	services.AuthModuleService = sharedService.NewAuthModuleService(app.msgBroker)
+	services.BotService = service.NewBotService(app.storage)
+	services.HelixManager = sharedService.NewHelixManager(
 		app.services.AuthModuleService,
 		config.Config.Twitch.ClientID,
 		config.Config.Twitch.ClientSecret,
 	)
-	app.services.TwitchService = service.NewTwitchService(app.services.HelixManager)
-	app.services.WebhookService = service.NewWebhookService(app.services.HelixManager, app.services.TwitchService)
+	services.TwitchService = service.NewTwitchService(services.HelixManager)
+	services.WebhookService = service.NewWebhookService(services.HelixManager, services.TwitchService)
+	app.services = services
 
 	// load api middlewares
 	app.apiMiddlewares = apiMiddleware.New(
@@ -81,7 +81,7 @@ func main() {
 			app.services.BotService,
 			app.services.AuthModuleService,
 		),
-    ChannelWebhookController: apiController.NewChatController(app.apiMiddlewares),
+		ChannelWebhookController: apiController.NewChatController(app.apiMiddlewares),
 	}
 	app.Start()
 }
