@@ -37,7 +37,6 @@ func New(
 
 func (m *Middlewares) VerifyTwitchWebhook(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-    fmt.Println("kek")
 		// TODO: handle length of request body
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {

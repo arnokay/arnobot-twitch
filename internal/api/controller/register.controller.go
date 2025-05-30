@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"log/slog"
 
 	"arnobot-shared/appctx"
@@ -9,6 +8,7 @@ import (
 	"arnobot-shared/data"
 	"arnobot-shared/pkg/errs"
 	sharedService "arnobot-shared/service"
+
 	"github.com/labstack/echo/v4"
 
 	"arnobot-twitch/internal/api/middleware"
@@ -66,9 +66,7 @@ func (c *RegisterController) Register(ctx echo.Context) error {
 
 	selectedBot, err := c.botService.SelectedBotGet(txCtx, user.ID)
 	if err != nil {
-		fmt.Println("kek")
 		if !errs.IsAppErr(err) {
-			fmt.Println("kek2")
 			return err
 		}
 
