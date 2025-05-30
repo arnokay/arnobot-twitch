@@ -42,12 +42,12 @@ func (app *application) Start() {
 		}
 	}()
 
-	// go func() {
-	// 	err := startMBServer(app)
-	// 	if err != nil {
-	// 		startError <- err
-	// 	}
-	// }()
+	go func() {
+		err := startMBServer(app)
+		if err != nil {
+			startError <- err
+		}
+	}()
 	select {
 	case err := <-startError:
 		app.logger.Error("application start error", "err", err)
@@ -117,19 +117,19 @@ func (app *application) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// func startMBServer(a *application) error {
-// 	if a.msgBroker == nil {
-// 		return errors.New("startMBServer: msgBroker is nil")
-// 	}
-//
-// 	if a.msgBroker.IsClosed() {
-// 		return errors.New("startMBServer: msgBroker is closed")
-// 	}
-//
-// 	a.mbControllers.Connect(a.msgBroker)
-//
-// 	return nil
-// }
+func startMBServer(a *application) error {
+	if a.msgBroker == nil {
+		return errors.New("startMBServer: msgBroker is nil")
+	}
+
+	if a.msgBroker.IsClosed() {
+		return errors.New("startMBServer: msgBroker is closed")
+	}
+
+	a.mbControllers.Connect(a.msgBroker)
+
+	return nil
+}
 
 func startAPIServer(a *application) error {
 	e := echo.New()

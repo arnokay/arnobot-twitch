@@ -18,6 +18,7 @@ import (
 	apiController "arnobot-twitch/internal/api/controller"
 	apiMiddleware "arnobot-twitch/internal/api/middleware"
 	"arnobot-twitch/internal/config"
+	mbController "arnobot-twitch/internal/mb/controller"
 	"arnobot-twitch/internal/service"
 )
 
@@ -33,6 +34,8 @@ type application struct {
 
 	apiControllers *apiController.Contollers
 	apiMiddlewares *apiMiddleware.Middlewares
+
+	mbControllers *mbController.Controllers
 
 	services *service.Services
 }
@@ -75,6 +78,7 @@ func main() {
 		sharedMiddleware.NewAuthMiddleware(app.services.AuthModuleService),
 	)
 
+  // load api controllers
 	app.apiControllers = &apiController.Contollers{
 		RegisterController: apiController.NewRegisterController(
 			app.apiMiddlewares,
@@ -82,10 +86,16 @@ func main() {
 			app.services.BotService,
 			app.services.AuthModuleService,
 			app.services.TransactionService,
-      app.services.TwitchService,
+			app.services.TwitchService,
 		),
 		ChannelWebhookController: apiController.NewChatController(app.apiMiddlewares),
 	}
+
+  // load mb controllers
+  app.mbControllers = &mbController.Controllers{
+    ChatController: mbController.NewChatController(app.services.TwitchService),
+  }
+
 	app.Start()
 }
 
