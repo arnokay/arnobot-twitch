@@ -9,6 +9,8 @@ import (
 	"arnobot-shared/db"
 	"arnobot-shared/pkg/errs"
 	"arnobot-shared/storage"
+
+	"github.com/google/uuid"
 )
 
 type BotService struct {
@@ -78,7 +80,7 @@ func (s *BotService) DefaultBotChange(ctx context.Context, botID string) error {
 	return nil
 }
 
-func (s *BotService) SelectedBotGet(ctx context.Context, userID int32) (*data.TwitchSelectedBot, error) {
+func (s *BotService) SelectedBotGet(ctx context.Context, userID uuid.UUID) (*data.TwitchSelectedBot, error) {
 	fromDB, err := s.storage.Query(ctx).TwitchSelectedBotGetByUserID(ctx, userID)
 	if err != nil {
 		s.logger.DebugContext(ctx, "cannot get selected bot")
