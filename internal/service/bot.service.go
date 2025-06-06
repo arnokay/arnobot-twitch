@@ -7,7 +7,7 @@ import (
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
 	"arnobot-shared/db"
-	"arnobot-shared/pkg/errs"
+	"arnobot-shared/apperror"
 	"arnobot-shared/storage"
 
 	"github.com/google/uuid"
@@ -74,7 +74,7 @@ func (s *BotService) DefaultBotChange(ctx context.Context, botID string) error {
 
 	if count == 0 {
 		s.logger.ErrorContext(ctx, "there is no default bot to update???")
-		return errs.ErrInternal
+		return apperror.ErrInternal
 	}
 
 	return nil

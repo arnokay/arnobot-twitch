@@ -2,7 +2,7 @@ package service
 
 import (
 	"arnobot-shared/db"
-	"arnobot-shared/pkg/errs"
+	"arnobot-shared/apperror"
 	"context"
 	"log/slog"
 
@@ -23,7 +23,7 @@ func (s *ChatService) GetDefaultBot(ctx context.Context) (*db.TwitchDefaultBot, 
   defaultBot, err := s.querier.TwitchDefaultBotGet(ctx)
   if err != nil {
     s.logger.Error("cannot get default bot", "err", err)
-    return nil, errs.ErrInternal
+    return nil, apperror.ErrInternal
   }
 
   return &defaultBot, nil

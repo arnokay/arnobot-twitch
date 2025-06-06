@@ -6,7 +6,7 @@ import (
 
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
-	"arnobot-shared/pkg/errs"
+	"arnobot-shared/apperror"
 	"arnobot-shared/service"
 	"github.com/nicklaw5/helix/v2"
 )
@@ -44,7 +44,7 @@ func (s *TwitchService) AppSendChannelMessage(
 	})
 	if err != nil {
 		s.logger.ErrorContext(ctx, "cannot send message to chat", "err", err, "broadcasterID", broadcasterID, "botID", botID, "message", message, "replyTo", replyTo)
-		return errs.ErrExternal
+		return apperror.ErrExternal
 	}
 
 	return nil
@@ -68,7 +68,7 @@ func (s *TwitchService) GetBotChannelRole(
 			"botID", botProvider.ProviderUserID,
 			"err", err,
 		)
-		return "", errs.ErrExternal
+		return "", apperror.ErrExternal
 	}
 
 	role := data.TwitchBotRoleUser

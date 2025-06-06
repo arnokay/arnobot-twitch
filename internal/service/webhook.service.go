@@ -9,7 +9,7 @@ import (
 
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
-	"arnobot-shared/pkg/errs"
+	"arnobot-shared/apperror"
 	"arnobot-shared/service"
 
 	"github.com/nicklaw5/helix/v2"
@@ -77,8 +77,8 @@ func (s *WebhookService) canSubscribe(
 			"webhookScopes", requiredScopes,
 			"missingScopes", missingScopes,
 		)
-		return errs.New(
-			errs.CodeForbidden,
+		return apperror.New(
+			apperror.CodeForbidden,
 			fmt.Sprintf("cannot subscribe user to %s because user missing scopes: %v", event, missingScopes),
 			nil,
 		)
@@ -99,7 +99,7 @@ func (s *WebhookService) SubscribeChannelChatMessageBot(
 	callbackURL, err := s.getCallbackURL(event)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "cannot create callback url", "err", err)
-		return errs.ErrNotImplemented
+		return apperror.ErrNotImplemented
 	}
 
   // TODO: handle response, 4xx is not considered as error, probably should handle those in helixManager
@@ -125,7 +125,7 @@ func (s *WebhookService) SubscribeChannelChatMessageBot(
 			"botID", botID,
 			"broadcasterID", broadcasterID,
 		) 
-		return errs.ErrExternal
+		return apperror.ErrExternal
 	}
 
 	return nil
@@ -147,7 +147,7 @@ func (s *WebhookService) SubscribeChannelChatMessage(
 	callbackURL, err := s.getCallbackURL(event)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "cannot create callback url", "err", err)
-		return errs.ErrNotImplemented
+		return apperror.ErrNotImplemented
 	}
 
 	_, err = client.CreateEventSubSubscription(&helix.EventSubSubscription{
@@ -172,7 +172,7 @@ func (s *WebhookService) SubscribeChannelChatMessage(
 			"botID", botProvider.ProviderUserID,
 			"broadcasterID", broadcasterID,
 		)
-		return errs.ErrExternal
+		return apperror.ErrExternal
 	}
 
 	// TODO: should save subscription? also probably secret must be per subscription

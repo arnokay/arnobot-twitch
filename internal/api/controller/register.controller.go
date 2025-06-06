@@ -6,7 +6,7 @@ import (
 	"arnobot-shared/appctx"
 	"arnobot-shared/applog"
 	"arnobot-shared/data"
-	"arnobot-shared/pkg/errs"
+	"arnobot-shared/apperror"
 	sharedService "arnobot-shared/service"
 
 	"github.com/labstack/echo/v4"
@@ -66,7 +66,7 @@ func (c *RegisterController) Register(ctx echo.Context) error {
 
 	selectedBot, err := c.botService.SelectedBotGet(txCtx, user.ID)
 	if err != nil {
-		if !errs.IsAppErr(err) {
+		if !apperror.IsAppErr(err) {
 			return err
 		}
 
