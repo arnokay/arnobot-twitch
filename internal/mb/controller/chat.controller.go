@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"arnobot-shared/applog"
-	"arnobot-shared/mbtypes"
+	"arnobot-shared/apptype"
 	"arnobot-shared/pkg/assert"
 	"arnobot-shared/topics"
 
@@ -38,7 +38,7 @@ func (c *ChatController) Connect(conn *nats.Conn) {
 }
 
 func (c *ChatController) ChatMessageSend(msg *nats.Msg) {
-  var payload mbtypes.PlatformChatMessageSend
+  var payload apptype.PlatformChatMessageSend
 
   payload.Decode(msg.Data)
 
