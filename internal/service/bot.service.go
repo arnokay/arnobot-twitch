@@ -27,6 +27,18 @@ func NewBotService(store storage.Storager) *BotService {
 	}
 }
 
+func (s *BotService) SelectedBotGetByBroadcasterID(ctx context.Context, broadcasterID string) (*data.TwitchSelectedBot, error) {
+  fromDB, err := s.storage.Query(ctx).TwitchSelectedBotGetByBroadcasterID(ctx, broadcasterID)
+  if err != nil {
+    s.logger.DebugContext(ctx, "cannot get selected bot", "err", err, "broadcasterID", broadcasterID)
+    return nil, s.storage.HandleErr(ctx, err)
+  }
+
+  bot := data.NewTwitchSelectedBotFromDB(fromDB)
+
+  return &bot, nil
+}
+
 func (s *BotService) BotCreate(ctx context.Context, arg data.TwitchBotCreate) (*data.TwitchBot, error) {
 	fromDB, err := s.storage.Query(ctx).TwitchBotCreate(ctx, arg.ToDB())
 	if err != nil {

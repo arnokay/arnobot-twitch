@@ -63,6 +63,7 @@ func main() {
 	services := &service.Services{}
 	services.TransactionService = sharedService.NewPgxTransactionService(app.db)
 	services.AuthModuleService = sharedService.NewAuthModuleService(app.msgBroker)
+  services.CoreModuleService = sharedService.NewCoreModuleService(app.msgBroker)
 	services.BotService = service.NewBotService(app.storage)
 	services.HelixManager = sharedService.NewHelixManager(
 		services.AuthModuleService,
@@ -88,7 +89,11 @@ func main() {
 			app.services.TransactionService,
 			app.services.TwitchService,
 		),
-		ChannelWebhookController: apiController.NewChatController(app.apiMiddlewares),
+		ChannelWebhookController: apiController.NewChatController(
+      app.apiMiddlewares,
+      app.services.BotService,
+      app.services.CoreModuleService,
+    ),
 	}
 
   // load mb controllers

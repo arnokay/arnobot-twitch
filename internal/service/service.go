@@ -6,6 +6,7 @@ import (
 
 type Services struct {
 	AuthModuleService  *service.AuthModuleService
+	CoreModuleService  *service.CoreModuleService
 	HelixManager       *service.HelixManager
 	BotService         *BotService
 	WebhookService     *WebhookService
