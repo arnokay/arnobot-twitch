@@ -1,13 +1,13 @@
 package controller
 
 import (
-	"fmt"
 	"log/slog"
 
 	"arnobot-shared/applog"
 	"arnobot-shared/events"
 	"arnobot-shared/platform"
 	sharedService "arnobot-shared/service"
+
 	"github.com/labstack/echo/v4"
 	"github.com/nicklaw5/helix/v2"
 
@@ -84,8 +84,6 @@ func (c *ChannelWebhookController) ChannelChatMessageHandler(ctx echo.Context) e
     c.logger.ErrorContext(ctx.Request().Context(), "cannot send message to core")
     return nil
   }
-
-	fmt.Println(event.Event.Message.Text)
 
 	return nil
 }
