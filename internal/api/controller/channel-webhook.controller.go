@@ -2,6 +2,7 @@ package controller
 
 import (
 	"log/slog"
+	"strings"
 
 	"arnobot-shared/applog"
 	"arnobot-shared/events"
@@ -70,7 +71,7 @@ func (c *ChannelWebhookController) ChannelChatMessageHandler(ctx echo.Context) e
 			BotID:         bot.BotID,
 		},
 		MessageID:        event.Event.MessageID,
-		Message:          event.Event.Message.Text,
+		Message:          strings.Replace(event.Event.Message.Text, "\U000e0000", "", 1),
 		ReplyTo:          event.Event.Reply.ParentMessageID,
 		BroadcasterLogin: event.Event.BroadcasterUserLogin,
 		BroadcasterName:  event.Event.BroadcasterUserName,
