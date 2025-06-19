@@ -4,10 +4,10 @@ import (
 	"log/slog"
 	"strings"
 
-	"arnobot-shared/applog"
-	"arnobot-shared/events"
-	"arnobot-shared/platform"
-	sharedService "arnobot-shared/service"
+	"github.com/arnokay/arnobot-shared/applog"
+	"github.com/arnokay/arnobot-shared/events"
+	"github.com/arnokay/arnobot-shared/platform"
+	sharedService "github.com/arnokay/arnobot-shared/service"
 
 	"github.com/labstack/echo/v4"
 	"github.com/nicklaw5/helix/v2"

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"arnobot-shared/applog"
-	"arnobot-shared/apptype"
-	"arnobot-shared/pkg/assert"
-	"arnobot-shared/platform"
-	"arnobot-shared/topics"
+	"github.com/arnokay/arnobot-shared/applog"
+	"github.com/arnokay/arnobot-shared/apptype"
+	"github.com/arnokay/arnobot-shared/pkg/assert"
+	"github.com/arnokay/arnobot-shared/platform"
+	"github.com/arnokay/arnobot-shared/topics"
 	"github.com/nats-io/nats.go"
 
 	"arnobot-twitch/internal/service"

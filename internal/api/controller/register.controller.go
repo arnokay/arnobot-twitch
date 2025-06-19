@@ -3,11 +3,11 @@ package controller
 import (
 	"log/slog"
 
-	"arnobot-shared/appctx"
-	"arnobot-shared/applog"
-	"arnobot-shared/data"
-	"arnobot-shared/apperror"
-	sharedService "arnobot-shared/service"
+	"github.com/arnokay/arnobot-shared/appctx"
+	"github.com/arnokay/arnobot-shared/applog"
+	"github.com/arnokay/arnobot-shared/data"
+	"github.com/arnokay/arnobot-shared/apperror"
+	sharedService "github.com/arnokay/arnobot-shared/service"
 
 	"github.com/labstack/echo/v4"
 

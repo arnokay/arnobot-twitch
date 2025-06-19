@@ -1,8 +1,8 @@
 package service
 
 import (
-	"arnobot-shared/db"
-	"arnobot-shared/apperror"
+	"github.com/arnokay/arnobot-shared/db"
+	"github.com/arnokay/arnobot-shared/apperror"
 	"context"
 	"log/slog"
 

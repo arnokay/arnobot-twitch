@@ -1,7 +1,7 @@
 package service
 
 import (
-	"arnobot-shared/service"
+	"github.com/arnokay/arnobot-shared/service"
 )
 
 type Services struct {

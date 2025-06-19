@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"arnobot-shared/applog"
-	"arnobot-shared/middlewares"
-	"arnobot-shared/apperror"
+	"github.com/arnokay/arnobot-shared/applog"
+	"github.com/arnokay/arnobot-shared/middlewares"
+	"github.com/arnokay/arnobot-shared/apperror"
 
 	"github.com/labstack/echo/v4"
 	"github.com/nicklaw5/helix/v2"

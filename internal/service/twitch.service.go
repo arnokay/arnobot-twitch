@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	"arnobot-shared/applog"
-	"arnobot-shared/data"
-	"arnobot-shared/apperror"
-	"arnobot-shared/service"
+	"github.com/arnokay/arnobot-shared/applog"
+	"github.com/arnokay/arnobot-shared/data"
+	"github.com/arnokay/arnobot-shared/apperror"
+	"github.com/arnokay/arnobot-shared/service"
 	"github.com/nicklaw5/helix/v2"
 )
 
