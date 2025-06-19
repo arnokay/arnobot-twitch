@@ -1,4 +1,4 @@
-module arnobot-twitch
+module github.com/arnokay/arnobot-twitch
 
 go 1.23.0
 

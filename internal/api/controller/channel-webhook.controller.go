@@ -12,8 +12,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/nicklaw5/helix/v2"
 
-	"arnobot-twitch/internal/api/middleware"
-	"arnobot-twitch/internal/service"
+	"github.com/arnokay/arnobot-twitch/internal/api/middleware"
+	"github.com/arnokay/arnobot-twitch/internal/service"
 )
 
 type ChannelWebhookController struct {

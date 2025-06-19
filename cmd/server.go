@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/arnokay/arnobot-shared/middlewares"
-	"arnobot-twitch/internal/config"
+	"github.com/arnokay/arnobot-twitch/internal/config"
 	"context"
 	"errors"
 	"fmt"

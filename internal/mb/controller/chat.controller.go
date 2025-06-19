@@ -11,7 +11,7 @@ import (
 	"github.com/arnokay/arnobot-shared/topics"
 	"github.com/nats-io/nats.go"
 
-	"arnobot-twitch/internal/service"
+	"github.com/arnokay/arnobot-twitch/internal/service"
 )
 
 type ChatController struct {

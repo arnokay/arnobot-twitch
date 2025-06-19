@@ -11,8 +11,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"arnobot-twitch/internal/api/middleware"
-	"arnobot-twitch/internal/service"
+	"github.com/arnokay/arnobot-twitch/internal/api/middleware"
+	"github.com/arnokay/arnobot-twitch/internal/service"
 )
 
 type RegisterController struct {

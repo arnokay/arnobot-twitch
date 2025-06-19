@@ -15,11 +15,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/nats-io/nats.go"
 
-	apiController "arnobot-twitch/internal/api/controller"
-	apiMiddleware "arnobot-twitch/internal/api/middleware"
-	"arnobot-twitch/internal/config"
-	mbController "arnobot-twitch/internal/mb/controller"
-	"arnobot-twitch/internal/service"
+	apiController "github.com/arnokay/arnobot-twitch/internal/api/controller"
+	apiMiddleware "github.com/arnokay/arnobot-twitch/internal/api/middleware"
+	"github.com/arnokay/arnobot-twitch/internal/config"
+	mbController "github.com/arnokay/arnobot-twitch/internal/mb/controller"
+	"github.com/arnokay/arnobot-twitch/internal/service"
 )
 
 const APP_NAME = "twitch"

@@ -14,7 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/nicklaw5/helix/v2"
 
-	"arnobot-twitch/internal/config"
+	"github.com/arnokay/arnobot-twitch/internal/config"
 )
 
 type Middlewares struct {
