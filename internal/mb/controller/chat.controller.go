@@ -33,13 +33,17 @@ func NewChatController(
 }
 
 func (c *ChatController) Connect(conn *nats.Conn) {
-	chatMessageSendTopic := topics.PlatformBroadcasterChatMessageSend.Build(platform.Twitch, topics.Any)
+	topic := topics.
+		TopicBuilder(topics.PlatformBroadcasterChatMessageSend).
+		Platform(platform.Twitch).
+		BroadcasterID(topics.Any).
+		Build()
 	_, err := conn.QueueSubscribe(
-		chatMessageSendTopic,
-		chatMessageSendTopic,
+		topic,
+		topic,
 		c.ChatMessageSend,
 	)
-	assert.NoError(err, fmt.Sprintf("MBChatController cannot subscribe to the topic: %s", chatMessageSendTopic))
+	assert.NoError(err, fmt.Sprintf("MBChatController cannot subscribe to the topic: %s", topic))
 }
 
 func (c *ChatController) ChatMessageSend(msg *nats.Msg) {

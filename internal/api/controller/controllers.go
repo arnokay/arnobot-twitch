@@ -6,10 +6,8 @@ import (
 
 type Contollers struct {
 	ChannelWebhookController *ChannelWebhookController
-	RegisterController       *RegisterController
 }
 
 func (c *Contollers) Routes(parentGroup *echo.Group) {
-	c.RegisterController.Routes(parentGroup)
 	c.ChannelWebhookController.Routes(parentGroup)
 }

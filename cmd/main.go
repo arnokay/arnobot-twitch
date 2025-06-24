@@ -62,11 +62,15 @@ func main() {
 	// load services
 	services := &service.Services{}
 	services.TransactionService = sharedService.NewPgxTransactionService(app.db)
-	services.AuthModuleService = sharedService.NewAuthModuleService(app.msgBroker)
-  services.CoreModuleService = sharedService.NewCoreModuleService(app.msgBroker)
-	services.BotService = service.NewBotService(app.storage)
+	services.AuthModule = sharedService.NewAuthModule(app.msgBroker)
+	services.PlatformModule = sharedService.NewPlatformModuleOut(app.msgBroker)
+	services.BotService = service.NewBotService(
+    app.storage,
+    services.TransactionService,
+    services.AuthModule,
+  )
 	services.HelixManager = sharedService.NewHelixManager(
-		services.AuthModuleService,
+		services.AuthModule,
 		config.Config.Twitch.ClientID,
 		config.Config.Twitch.ClientSecret,
 	)
@@ -76,30 +80,23 @@ func main() {
 
 	// load api middlewares
 	app.apiMiddlewares = apiMiddleware.New(
-		sharedMiddleware.NewAuthMiddleware(app.services.AuthModuleService),
+		sharedMiddleware.NewAuthMiddleware(app.services.AuthModule),
 	)
 
-  // load api controllers
+	// load api controllers
 	app.apiControllers = &apiController.Contollers{
-		RegisterController: apiController.NewRegisterController(
-			app.apiMiddlewares,
-			app.services.WebhookService,
-			app.services.BotService,
-			app.services.AuthModuleService,
-			app.services.TransactionService,
-			app.services.TwitchService,
-		),
 		ChannelWebhookController: apiController.NewChatController(
-      app.apiMiddlewares,
-      app.services.BotService,
-      app.services.CoreModuleService,
-    ),
+			app.apiMiddlewares,
+			app.services.BotService,
+			app.services.PlatformModule,
+		),
 	}
 
-  // load mb controllers
-  app.mbControllers = &mbController.Controllers{
-    ChatController: mbController.NewChatController(app.services.TwitchService),
-  }
+	// load mb controllers
+	app.mbControllers = &mbController.Controllers{
+		ChatController: mbController.NewChatController(app.services.TwitchService),
+		BotController:  mbController.NewBotController(app.services.BotService),
+	}
 
 	app.Start()
 }

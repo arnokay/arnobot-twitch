@@ -4,39 +4,133 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/data"
 	"github.com/arnokay/arnobot-shared/db"
-	"github.com/arnokay/arnobot-shared/apperror"
+	sharedService "github.com/arnokay/arnobot-shared/service"
 	"github.com/arnokay/arnobot-shared/storage"
-
 	"github.com/google/uuid"
 )
 
 type BotService struct {
-	storage storage.Storager
+	storage       storage.Storager
+	txService     sharedService.ITransactionService
+	authModule    *sharedService.AuthModule
+	whService     *WebhookService
+	twitchService *TwitchService
 
 	logger *slog.Logger
 }
 
-func NewBotService(store storage.Storager) *BotService {
+func NewBotService(
+	store storage.Storager,
+	txService sharedService.ITransactionService,
+	authModule *sharedService.AuthModule,
+) *BotService {
 	logger := applog.NewServiceLogger("bot-service")
 	return &BotService{
-		storage: store,
-		logger:  logger,
+		storage:    store,
+		txService:  txService,
+		authModule: authModule,
+		logger:     logger,
 	}
 }
 
+func (s *BotService) StartBot(ctx context.Context, arg data.PlatformToggleBot) error {
+	txCtx, err := s.txService.Begin(ctx)
+	defer s.txService.Rollback(txCtx)
+	if err != nil {
+		return err
+	}
+
+	selectedBot, err := s.SelectedBotGet(txCtx, arg.UserID)
+	if err != nil {
+		if !apperror.IsAppErr(err) {
+			return err
+		}
+
+    selectedBot, err = s.SelectedBotSetDefault(txCtx, arg.UserID)
+    if err != nil {
+      return err
+    }
+	}
+
+	err = s.txService.Commit(txCtx)
+	if err != nil {
+		return err
+	}
+
+	err = s.whService.SubscribeChannelChatMessageBot(ctx, selectedBot.BotID, selectedBot.BroadcasterID)
+	if err != nil {
+		return err
+	}
+
+	s.twitchService.AppSendChannelMessage(ctx, selectedBot.BotID, selectedBot.BroadcasterID, "hi!", "")
+
+	return nil
+}
+
+func (s *BotService) SelectedBotSetDefault(ctx context.Context, userID uuid.UUID) (*data.TwitchSelectedBot, error) {
+	var bot *data.TwitchBot
+
+	txCtx, err := s.txService.Begin(ctx)
+	defer s.txService.Rollback(txCtx)
+
+	bots, err := s.BotsGet(ctx, data.TwitchBotsGet{
+		UserID: &userID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(bots) != 0 {
+		bot = &bots[0]
+	} else {
+		defaultBot, err := s.DefaultBotGet(ctx)
+		if err != nil {
+			return nil, err
+		}
+		userProvider, err := s.authModule.AuthProviderGet(ctx, data.AuthProviderGet{
+			UserID:   &userID,
+			Provider: "twitch",
+		})
+		if err != nil {
+			return nil, err
+		}
+		bot, err = s.BotCreate(ctx, data.TwitchBotCreate{
+			UserID:        userID,
+			BotID:         defaultBot.BotID,
+			BroadcasterID: userProvider.ProviderUserID,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	selectedBot, err := s.SelectedBotChange(ctx, *bot)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.txService.Commit(txCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	return selectedBot, nil
+}
+
 func (s *BotService) SelectedBotGetByBroadcasterID(ctx context.Context, broadcasterID string) (*data.TwitchSelectedBot, error) {
-  fromDB, err := s.storage.Query(ctx).TwitchSelectedBotGetByBroadcasterID(ctx, broadcasterID)
-  if err != nil {
-    s.logger.DebugContext(ctx, "cannot get selected bot", "err", err, "broadcasterID", broadcasterID)
-    return nil, s.storage.HandleErr(ctx, err)
-  }
+	fromDB, err := s.storage.Query(ctx).TwitchSelectedBotGetByBroadcasterID(ctx, broadcasterID)
+	if err != nil {
+		s.logger.DebugContext(ctx, "cannot get selected bot", "err", err, "broadcasterID", broadcasterID)
+		return nil, s.storage.HandleErr(ctx, err)
+	}
 
-  bot := data.NewTwitchSelectedBotFromDB(fromDB)
+	bot := data.NewTwitchSelectedBotFromDB(fromDB)
 
-  return &bot, nil
+	return &bot, nil
 }
 
 func (s *BotService) BotCreate(ctx context.Context, arg data.TwitchBotCreate) (*data.TwitchBot, error) {

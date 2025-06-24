@@ -1,5 +1,9 @@
 github.com/arnokay/arnobot-shared v0.1.0 h1:p+bihfTgzUde02z9dEnY+FLTS3HUToOHGz9XvXE5vdI=
 github.com/arnokay/arnobot-shared v0.1.0/go.mod h1:w+wtgk0eKTb/K4u8riyr8V2s6n6ddQbXWer2NLsB01s=
+github.com/arnokay/arnobot-shared v0.1.1-0.20250624095746-84976475cb59 h1:BIfgUSrsWZtMj7CNZzF3fo4w8zD+ZEgfn03bWkG0kIc=
+github.com/arnokay/arnobot-shared v0.1.1-0.20250624095746-84976475cb59/go.mod h1:2GvDL7XQDdYhjn17J+kJ3BsZE8HdSAdAqGsUQYJqpTY=
+github.com/arnokay/arnobot-shared v0.1.1-0.20250624194712-b9682f2893f8 h1:DCB6f9Zdh7stIb6rvZVjOrcJkJWpd+OwURH2ECoK96w=
+github.com/arnokay/arnobot-shared v0.1.1-0.20250624194712-b9682f2893f8/go.mod h1:2GvDL7XQDdYhjn17J+kJ3BsZE8HdSAdAqGsUQYJqpTY=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

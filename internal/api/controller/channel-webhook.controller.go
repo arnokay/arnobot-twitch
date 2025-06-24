@@ -8,7 +8,6 @@ import (
 	"github.com/arnokay/arnobot-shared/events"
 	"github.com/arnokay/arnobot-shared/platform"
 	sharedService "github.com/arnokay/arnobot-shared/service"
-
 	"github.com/labstack/echo/v4"
 	"github.com/nicklaw5/helix/v2"
 
@@ -21,24 +20,24 @@ type ChannelWebhookController struct {
 
 	middlewares *middleware.Middlewares
 
-	twitchService     *service.TwitchService
-	botService        *service.BotService
-	coreModuleService *sharedService.CoreModuleService
+	twitchService  *service.TwitchService
+	botService     *service.BotService
+	platformModule *sharedService.PlatformModuleOut
 }
 
 func NewChatController(
 	middlewares *middleware.Middlewares,
 	botService *service.BotService,
-  coreModuleService *sharedService.CoreModuleService,
+	platformModule *sharedService.PlatformModuleOut,
 ) *ChannelWebhookController {
 	logger := applog.NewServiceLogger("ChatController")
 
 	return &ChannelWebhookController{
 		logger: logger,
 
-		middlewares: middlewares,
-		botService:  botService,
-    coreModuleService: coreModuleService,
+		middlewares:    middlewares,
+		botService:     botService,
+		platformModule: platformModule,
 	}
 }
 
@@ -80,11 +79,11 @@ func (c *ChannelWebhookController) ChannelChatMessageHandler(ctx echo.Context) e
 		ChatterLogin:     event.Event.ChatterUserLogin,
 	}
 
-  err = c.coreModuleService.ChatMessageNotify(ctx.Request().Context(), internalEvent)
-  if err != nil {
-    c.logger.ErrorContext(ctx.Request().Context(), "cannot send message to core")
-    return nil
-  }
+	err = c.platformModule.ChatMessageNotify(ctx.Request().Context(), internalEvent)
+	if err != nil {
+		c.logger.ErrorContext(ctx.Request().Context(), "cannot send message to core")
+		return nil
+	}
 
 	return nil
 }

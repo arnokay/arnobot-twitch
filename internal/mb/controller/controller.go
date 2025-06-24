@@ -11,10 +11,12 @@ import (
 
 type Controllers struct {
 	ChatController controllers.NatsController
+	BotController  controllers.NatsController
 }
 
 func (c *Controllers) Connect(conn *nats.Conn) {
 	c.ChatController.Connect(conn)
+	c.BotController.Connect(conn)
 }
 
 func newControllerContext(traceID string) (context.Context, context.CancelFunc) {
