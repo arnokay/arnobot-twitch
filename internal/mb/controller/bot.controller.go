@@ -36,23 +36,38 @@ func (c *BotController) Connect(conn *nats.Conn) {
 	_, err := conn.QueueSubscribe(topic, topic, c.StartBot)
 	assert.NoError(err, "cannot subscribe to: "+topic)
 	topic = topics.TopicBuilder(topics.PlatformStopBot).Platform(platform.Twitch).Build()
-	_, err = conn.QueueSubscribe(topic, topic, c.StartBot)
+	_, err = conn.QueueSubscribe(topic, topic, c.StopBot)
 	assert.NoError(err, "cannot subscribe to: "+topic)
 }
 
 func (c *BotController) StartBot(msg *nats.Msg) {
 	var payload apptype.PlatformStartBot
 
+
 	payload.Decode(msg.Data)
+  c.logger.Debug("payload", "p", payload)
 
 	ctx, cancel := newControllerContext(payload.TraceID)
 	defer cancel()
 
 	err := c.botService.StartBot(ctx, payload.Data)
 	if err != nil {
-		c.logger.DebugContext(ctx, "cannot start a bot", "payload", payload)
+		c.logger.DebugContext(ctx, "cannot start a bot", "payload", payload, "err", err)
 		return
 	}
 }
 
-func (c *BotController) StopBot(msg *nats.Msg) {}
+func (c *BotController) StopBot(msg *nats.Msg) {
+	var payload apptype.PlatformStopBot
+
+	payload.Decode(msg.Data)
+
+	ctx, cancel := newControllerContext(payload.TraceID)
+	defer cancel()
+
+	err := c.botService.StopBot(ctx, payload.Data)
+	if err != nil {
+		c.logger.DebugContext(ctx, "cannot stop bot", "payload", payload, "err", err)
+		return
+	}
+}

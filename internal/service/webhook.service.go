@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"slices"
+	"sync"
 
+	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/data"
-	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/service"
-
 	"github.com/nicklaw5/helix/v2"
 
 	"github.com/arnokay/arnobot-twitch/internal/config"
@@ -24,7 +23,7 @@ type WebhookService struct {
 	logger *slog.Logger
 
 	webhookToScopes map[string][]string
-	eventToCallback map[string]string
+	callbackURL     string
 }
 
 func NewWebhookService(
@@ -37,16 +36,12 @@ func NewWebhookService(
 		helix.EventSubTypeChannelChatMessage: {"user:read:chat"},
 	}
 
-	eventToCallback := map[string]string{
-		helix.EventSubTypeChannelChatMessage: "/v1/callback/channel-chat-message",
-	}
-
 	return &WebhookService{
 		helixManager:    helixManager,
 		twitchService:   twitchService,
 		logger:          logger,
 		webhookToScopes: webhooksToScopes,
-		eventToCallback: eventToCallback,
+		callbackURL:     config.Config.Webhooks.Callback,
 	}
 }
 
@@ -92,18 +87,10 @@ func (s *WebhookService) SubscribeChannelChatMessageBot(
 	botID,
 	broadcasterID string,
 ) error {
-	event := helix.EventSubTypeChannelChatMessage
-
 	client := s.helixManager.GetApp(ctx)
 
-	callbackURL, err := s.getCallbackURL(event)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "cannot create callback url", "err", err)
-		return apperror.ErrNotImplemented
-	}
-
-  // TODO: handle response, 4xx is not considered as error, probably should handle those in helixManager
-  _, err = client.CreateEventSubSubscription(&helix.EventSubSubscription{
+	// TODO: handle response, 4xx is not considered as error, probably should handle those in helixManager
+	response, err := client.CreateEventSubSubscription(&helix.EventSubSubscription{
 		Type:    helix.EventSubTypeChannelChatMessage,
 		Version: "1",
 		Condition: helix.EventSubCondition{
@@ -112,19 +99,23 @@ func (s *WebhookService) SubscribeChannelChatMessageBot(
 		},
 		Transport: helix.EventSubTransport{
 			Method:   "webhook",
-			Callback: callbackURL.String(),
+			Callback: s.callbackURL,
 			Secret:   config.Config.Webhooks.Secret,
 		},
 	})
-	if err != nil {
+	s.logger.DebugContext(ctx, "response", "response", response)
+	s.logger.DebugContext(ctx, "err", "err", err)
+
+	if err != nil || response.StatusCode >= 400 {
 		s.logger.ErrorContext(
 			ctx,
 			"cannot create subscription",
 			"err", err,
+			"err_msg", response.ErrorMessage,
 			"event", helix.EventSubTypeChannelChatMessage,
 			"botID", botID,
 			"broadcasterID", broadcasterID,
-		) 
+		)
 		return apperror.ErrExternal
 	}
 
@@ -144,13 +135,7 @@ func (s *WebhookService) SubscribeChannelChatMessage(
 
 	client := s.helixManager.GetByProvider(ctx, botProvider)
 
-	callbackURL, err := s.getCallbackURL(event)
-	if err != nil {
-		s.logger.ErrorContext(ctx, "cannot create callback url", "err", err)
-		return apperror.ErrNotImplemented
-	}
-
-	_, err = client.CreateEventSubSubscription(&helix.EventSubSubscription{
+	_, err := client.CreateEventSubSubscription(&helix.EventSubSubscription{
 		Type:    helix.EventSubTypeChannelChatMessage,
 		Version: "1",
 		Condition: helix.EventSubCondition{
@@ -159,7 +144,7 @@ func (s *WebhookService) SubscribeChannelChatMessage(
 		},
 		Transport: helix.EventSubTransport{
 			Method:   "webhook",
-			Callback: callbackURL.String(),
+			Callback: s.callbackURL,
 			Secret:   config.Config.Webhooks.Secret,
 		},
 	})
@@ -176,6 +161,82 @@ func (s *WebhookService) SubscribeChannelChatMessage(
 	}
 
 	// TODO: should save subscription? also probably secret must be per subscription
+
+	return nil
+}
+
+func (s *WebhookService) Unsubscribe(
+	ctx context.Context,
+	subscriptionID string,
+) error {
+	client := s.helixManager.GetApp(ctx)
+
+	response, err := client.RemoveEventSubSubscription(subscriptionID)
+	if err != nil || response.StatusCode >= 400 {
+		s.logger.ErrorContext(
+			ctx,
+			"cannot unsubscribe",
+			"err", err,
+			"err_msg", response.ErrorMessage,
+			"subscription_id", subscriptionID,
+		)
+		return apperror.ErrExternal
+	}
+
+	return nil
+}
+
+func (s *WebhookService) UnsubscribeAllBot(
+	ctx context.Context,
+	botID,
+	broadcasterID string,
+) error {
+	client := s.helixManager.GetApp(ctx)
+
+	var subIds []string
+
+	var cursor string
+	for {
+		subs, err := client.GetEventSubSubscriptions(&helix.EventSubSubscriptionsParams{
+			UserID: botID,
+			After:  cursor,
+		})
+		if err != nil || subs.StatusCode >= 400 {
+			s.logger.ErrorContext(ctx, "error getting eventsub subscriptions", "err", err, "err_msg", subs.ErrorMessage)
+			return apperror.ErrExternal
+		}
+
+		if len(subs.Data.EventSubSubscriptions) == 0 {
+			s.logger.DebugContext(ctx, "no more eventsub subscriptions")
+			break
+		}
+
+		for _, sub := range subs.Data.EventSubSubscriptions {
+			if sub.Condition.BroadcasterUserID == broadcasterID {
+				subIds = append(subIds, sub.ID)
+			}
+		}
+
+		if subs.Data.Pagination.Cursor == "" {
+			s.logger.DebugContext(ctx, "no more eventsub subscriptions")
+			break
+		}
+
+		cursor = subs.Data.Pagination.Cursor
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(subIds))
+	for _, id := range subIds {
+		go func() {
+			err := s.Unsubscribe(ctx, id)
+			if err != nil {
+				s.logger.ErrorContext(ctx, "failed to unsubscribe", "err", err)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 
 	return nil
 }
@@ -202,19 +263,4 @@ func (s *WebhookService) Subscribe(ctx context.Context, botProvider data.AuthPro
 	}
 
 	return nil
-}
-
-func (s *WebhookService) getCallbackURL(event string) (*url.URL, error) {
-	u := url.URL{
-		Host:   config.Config.Global.BaseURL,
-		Scheme: "https",
-	}
-	path, ok := s.eventToCallback[event]
-	if !ok {
-		return nil, fmt.Errorf("no callback for specified event: %s", event)
-	}
-
-	u.Path = path
-
-	return &u, nil
 }

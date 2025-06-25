@@ -54,7 +54,7 @@ func (m *Middlewares) VerifyTwitchWebhook(next echo.HandlerFunc) echo.HandlerFun
 		msgType := c.Request().Header.Get("Twitch-Eventsub-Message-Type")
 		if msgType == "" {
 			m.logger.ErrorContext(c.Request().Context(), "message type is empty")
-			return apperror.ErrInvalidInput
+			return apperror.ErrUnauthorized
 		}
 
 		if msgType != "webhook_callback_verification" {

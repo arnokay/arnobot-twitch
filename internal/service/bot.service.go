@@ -27,13 +27,17 @@ func NewBotService(
 	store storage.Storager,
 	txService sharedService.ITransactionService,
 	authModule *sharedService.AuthModule,
+	whService *WebhookService,
+	twitchService *TwitchService,
 ) *BotService {
 	logger := applog.NewServiceLogger("bot-service")
 	return &BotService{
-		storage:    store,
-		txService:  txService,
-		authModule: authModule,
-		logger:     logger,
+		storage:       store,
+		txService:     txService,
+		authModule:    authModule,
+		whService:     whService,
+		twitchService: twitchService,
+		logger:        logger,
 	}
 }
 
@@ -50,10 +54,10 @@ func (s *BotService) StartBot(ctx context.Context, arg data.PlatformToggleBot) e
 			return err
 		}
 
-    selectedBot, err = s.SelectedBotSetDefault(txCtx, arg.UserID)
-    if err != nil {
-      return err
-    }
+		selectedBot, err = s.SelectedBotSetDefault(txCtx, arg.UserID)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = s.txService.Commit(txCtx)
@@ -61,7 +65,7 @@ func (s *BotService) StartBot(ctx context.Context, arg data.PlatformToggleBot) e
 		return err
 	}
 
-	err = s.whService.SubscribeChannelChatMessageBot(ctx, selectedBot.BotID, selectedBot.BroadcasterID)
+	err = s.whService.SubscribeChannelChatMessageBot(txCtx, selectedBot.BotID, selectedBot.BroadcasterID)
 	if err != nil {
 		return err
 	}
@@ -71,11 +75,29 @@ func (s *BotService) StartBot(ctx context.Context, arg data.PlatformToggleBot) e
 	return nil
 }
 
+func (s *BotService) StopBot(ctx context.Context, arg data.PlatformToggleBot) error {
+	selectedBot, err := s.SelectedBotGet(ctx, arg.UserID)
+	if err != nil {
+		return err
+	}
+
+	err = s.whService.UnsubscribeAllBot(ctx, selectedBot.BotID, selectedBot.BroadcasterID)
+	if err != nil {
+		s.logger.DebugContext(ctx, "bot cannot unsubscribe")
+		return err
+	}
+
+	return nil
+}
+
 func (s *BotService) SelectedBotSetDefault(ctx context.Context, userID uuid.UUID) (*data.TwitchSelectedBot, error) {
 	var bot *data.TwitchBot
 
 	txCtx, err := s.txService.Begin(ctx)
 	defer s.txService.Rollback(txCtx)
+	if err != nil {
+		return nil, err
+	}
 
 	bots, err := s.BotsGet(ctx, data.TwitchBotsGet{
 		UserID: &userID,

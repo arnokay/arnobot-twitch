@@ -22,7 +22,7 @@ import (
 	"github.com/arnokay/arnobot-twitch/internal/service"
 )
 
-const APP_NAME = "twitch"
+const AppName = "twitch"
 
 type application struct {
 	logger *slog.Logger
@@ -47,7 +47,7 @@ func main() {
 	cfg := config.Load()
 
 	// load logger
-	logger := applog.Init(APP_NAME, os.Stdout, cfg.Global.LogLevel)
+	logger := applog.Init(AppName, os.Stdout, cfg.Global.LogLevel)
 	app.logger = logger
 
 	// load db
@@ -64,11 +64,6 @@ func main() {
 	services.TransactionService = sharedService.NewPgxTransactionService(app.db)
 	services.AuthModule = sharedService.NewAuthModule(app.msgBroker)
 	services.PlatformModule = sharedService.NewPlatformModuleOut(app.msgBroker)
-	services.BotService = service.NewBotService(
-    app.storage,
-    services.TransactionService,
-    services.AuthModule,
-  )
 	services.HelixManager = sharedService.NewHelixManager(
 		services.AuthModule,
 		config.Config.Twitch.ClientID,
@@ -76,6 +71,13 @@ func main() {
 	)
 	services.TwitchService = service.NewTwitchService(services.HelixManager)
 	services.WebhookService = service.NewWebhookService(services.HelixManager, services.TwitchService)
+	services.BotService = service.NewBotService(
+		app.storage,
+		services.TransactionService,
+		services.AuthModule,
+		services.WebhookService,
+		services.TwitchService,
+	)
 	app.services = services
 
 	// load api middlewares
@@ -85,7 +87,7 @@ func main() {
 
 	// load api controllers
 	app.apiControllers = &apiController.Contollers{
-		ChannelWebhookController: apiController.NewChatController(
+		WebhookController: apiController.NewWebhookController(
 			app.apiMiddlewares,
 			app.services.BotService,
 			app.services.PlatformModule,

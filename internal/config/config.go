@@ -13,6 +13,7 @@ const (
 	ENV_MB_URL               = "MB_URL"
 	ENV_DB_DSN               = "DB_DSN"
 	ENV_TWITCH_WH_SECRET     = "TWITCH_WH_SECRET"
+	ENV_TWITCH_WH_CALLBACK   = "TWITCH_WH_CALLBACK"
 	ENV_BASE_URL             = "BASE_URL"
 	ENV_PORT                 = "PORT"
 	ENV_TWITCH_CLIENT_ID     = "TWITCH_CLIENT_ID"
@@ -50,7 +51,8 @@ type MBConfig struct {
 }
 
 type Webhooks struct {
-	Secret string
+	Secret   string
+	Callback string
 }
 
 var Config *config
@@ -71,11 +73,11 @@ func Load() *config {
 	flag.StringVar(&Config.MB.URL, "mb-url", os.Getenv(ENV_MB_URL), "Message Broker URL")
 	flag.IntVar(&Config.Global.LogLevel, "log-level", Config.Global.LogLevel, "Minimal Log Level (default: -4)")
 	flag.StringVar(&Config.Webhooks.Secret, "wh-secret", os.Getenv(ENV_TWITCH_WH_SECRET), "secret for subscribing to webhooks")
+  flag.StringVar(&Config.Webhooks.Callback, "wh-callback", os.Getenv(ENV_TWITCH_WH_CALLBACK), "twitch secret")
 	flag.StringVar(&Config.Global.BaseURL, "base-url", os.Getenv(ENV_BASE_URL), "public url")
 	flag.IntVar(&Config.Global.Port, "port", Config.Global.Port, "http port")
-	flag.StringVar(&Config.Twitch.ClientID, "t-client-id", os.Getenv(ENV_TWITCH_CLIENT_ID), "twitch client id")
-	flag.StringVar(&Config.Twitch.ClientSecret, "t-client-secret", os.Getenv(ENV_TWITCH_CLIENT_SECRET), "twitch client id")
-	flag.StringVar(&Config.Webhooks.Secret, "t-wh-client-secret", os.Getenv(ENV_TWITCH_CLIENT_SECRET), "twitch secret")
+	flag.StringVar(&Config.Twitch.ClientID, "client-id", os.Getenv(ENV_TWITCH_CLIENT_ID), "twitch client id")
+	flag.StringVar(&Config.Twitch.ClientSecret, "client-secret", os.Getenv(ENV_TWITCH_CLIENT_SECRET), "twitch client id")
 	flag.StringVar(&Config.DB.DSN, "db-dsn", os.Getenv(ENV_DB_DSN), "DB DSN")
 	flag.IntVar(&Config.DB.MaxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.IntVar(&Config.DB.MaxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
