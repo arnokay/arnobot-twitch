@@ -1,9 +1,5 @@
-github.com/arnokay/arnobot-shared v0.1.0 h1:p+bihfTgzUde02z9dEnY+FLTS3HUToOHGz9XvXE5vdI=
-github.com/arnokay/arnobot-shared v0.1.0/go.mod h1:w+wtgk0eKTb/K4u8riyr8V2s6n6ddQbXWer2NLsB01s=
-github.com/arnokay/arnobot-shared v0.1.1-0.20250624095746-84976475cb59 h1:BIfgUSrsWZtMj7CNZzF3fo4w8zD+ZEgfn03bWkG0kIc=
-github.com/arnokay/arnobot-shared v0.1.1-0.20250624095746-84976475cb59/go.mod h1:2GvDL7XQDdYhjn17J+kJ3BsZE8HdSAdAqGsUQYJqpTY=
-github.com/arnokay/arnobot-shared v0.1.1-0.20250624194712-b9682f2893f8 h1:DCB6f9Zdh7stIb6rvZVjOrcJkJWpd+OwURH2ECoK96w=
-github.com/arnokay/arnobot-shared v0.1.1-0.20250624194712-b9682f2893f8/go.mod h1:2GvDL7XQDdYhjn17J+kJ3BsZE8HdSAdAqGsUQYJqpTY=
+github.com/arnokay/arnobot-shared v0.1.1-0.20250626184802-101da2b03751 h1:0jhEOu017gvk8rxFS+lqDkXtCqMb6Y/jYhvYxCRa/GY=
+github.com/arnokay/arnobot-shared v0.1.1-0.20250626184802-101da2b03751/go.mod h1:tW1V9l7XloSgi9f/oatZuYJeNzhQ9MkEiidbmDPBr9I=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -51,8 +47,8 @@ github.com/valyala/fasttemplate v1.2.2 h1:lxLXG0uE3Qnshl9QyaK6XJxMXlQZELvChBOCmQ
 github.com/valyala/fasttemplate v1.2.2/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
 golang.org/x/crypto v0.37.0 h1:kJNSjF/Xp7kU0iB2Z+9viTPMW4EqqsrywMXLJOOsXSE=
 golang.org/x/crypto v0.37.0/go.mod h1:vg+k43peMZ0pUMhYmVAWysMK35e6ioLh3wB8ZCAfbVc=
-golang.org/x/net v0.33.0 h1:74SYHlV8BIgHIFC/LrYkOGIwL19eTYXQ5wc6TBuO36I=
-golang.org/x/net v0.33.0/go.mod h1:HXLR5J+9DxmrqMwG9qjGCxZ+zKXxBru04zlTvWlWuN4=
+golang.org/x/net v0.34.0 h1:Mb7Mrk043xzHgnRM88suvJFwzVrRfHEHJEl5/71CKw0=
+golang.org/x/net v0.34.0/go.mod h1:di0qlW3YNM5oh6GqDGQr92MyTozJPmybPK4Ev/Gm31k=
 golang.org/x/sync v0.13.0 h1:AauUjRAJ9OSnvULf/ARrrVywoJDy0YS2AwQ98I37610=
 golang.org/x/sync v0.13.0/go.mod h1:1dzgHSNfp02xaA81J2MS99Qcpr2w7fw1gpm99rleRqA=
 golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

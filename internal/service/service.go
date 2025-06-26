@@ -7,7 +7,7 @@ import (
 type Services struct {
 	AuthModule         *service.AuthModule
 	PlatformModule     *service.PlatformModuleOut
-	HelixManager       *service.HelixManager
+	HelixManager       *HelixManager
 	BotService         *BotService
 	WebhookService     *WebhookService
 	TwitchService      *TwitchService

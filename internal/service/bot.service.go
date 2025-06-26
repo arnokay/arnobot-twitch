@@ -6,11 +6,13 @@ import (
 
 	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
-	"github.com/arnokay/arnobot-shared/data"
+	sharedData "github.com/arnokay/arnobot-shared/data"
 	"github.com/arnokay/arnobot-shared/db"
 	sharedService "github.com/arnokay/arnobot-shared/service"
 	"github.com/arnokay/arnobot-shared/storage"
 	"github.com/google/uuid"
+
+	"github.com/arnokay/arnobot-twitch/internal/data"
 )
 
 type BotService struct {
@@ -41,7 +43,7 @@ func NewBotService(
 	}
 }
 
-func (s *BotService) StartBot(ctx context.Context, arg data.PlatformToggleBot) error {
+func (s *BotService) StartBot(ctx context.Context, arg sharedData.PlatformToggleBot) error {
 	txCtx, err := s.txService.Begin(ctx)
 	defer s.txService.Rollback(txCtx)
 	if err != nil {
@@ -75,7 +77,7 @@ func (s *BotService) StartBot(ctx context.Context, arg data.PlatformToggleBot) e
 	return nil
 }
 
-func (s *BotService) StopBot(ctx context.Context, arg data.PlatformToggleBot) error {
+func (s *BotService) StopBot(ctx context.Context, arg sharedData.PlatformToggleBot) error {
 	selectedBot, err := s.SelectedBotGet(ctx, arg.UserID)
 	if err != nil {
 		return err
@@ -90,8 +92,8 @@ func (s *BotService) StopBot(ctx context.Context, arg data.PlatformToggleBot) er
 	return nil
 }
 
-func (s *BotService) SelectedBotSetDefault(ctx context.Context, userID uuid.UUID) (*data.TwitchSelectedBot, error) {
-	var bot *data.TwitchBot
+func (s *BotService) SelectedBotSetDefault(ctx context.Context, userID uuid.UUID) (*data.PlatformSelectedBot, error) {
+	var bot *data.PlatformBot
 
 	txCtx, err := s.txService.Begin(ctx)
 	defer s.txService.Rollback(txCtx)
@@ -99,7 +101,7 @@ func (s *BotService) SelectedBotSetDefault(ctx context.Context, userID uuid.UUID
 		return nil, err
 	}
 
-	bots, err := s.BotsGet(ctx, data.TwitchBotsGet{
+	bots, err := s.BotsGet(ctx, data.PlatformBotsGet{
 		UserID: &userID,
 	})
 	if err != nil {
@@ -113,14 +115,14 @@ func (s *BotService) SelectedBotSetDefault(ctx context.Context, userID uuid.UUID
 		if err != nil {
 			return nil, err
 		}
-		userProvider, err := s.authModule.AuthProviderGet(ctx, data.AuthProviderGet{
+		userProvider, err := s.authModule.AuthProviderGet(ctx, sharedData.AuthProviderGet{
 			UserID:   &userID,
 			Provider: "twitch",
 		})
 		if err != nil {
 			return nil, err
 		}
-		bot, err = s.BotCreate(ctx, data.TwitchBotCreate{
+		bot, err = s.BotCreate(ctx, data.PlatformBotCreate{
 			UserID:        userID,
 			BotID:         defaultBot.BotID,
 			BroadcasterID: userProvider.ProviderUserID,
@@ -143,52 +145,52 @@ func (s *BotService) SelectedBotSetDefault(ctx context.Context, userID uuid.UUID
 	return selectedBot, nil
 }
 
-func (s *BotService) SelectedBotGetByBroadcasterID(ctx context.Context, broadcasterID string) (*data.TwitchSelectedBot, error) {
+func (s *BotService) SelectedBotGetByBroadcasterID(ctx context.Context, broadcasterID string) (*data.PlatformSelectedBot, error) {
 	fromDB, err := s.storage.Query(ctx).TwitchSelectedBotGetByBroadcasterID(ctx, broadcasterID)
 	if err != nil {
 		s.logger.DebugContext(ctx, "cannot get selected bot", "err", err, "broadcasterID", broadcasterID)
 		return nil, s.storage.HandleErr(ctx, err)
 	}
 
-	bot := data.NewTwitchSelectedBotFromDB(fromDB)
+	bot := data.NewPlatformSelectedBotFromDB(fromDB)
 
 	return &bot, nil
 }
 
-func (s *BotService) BotCreate(ctx context.Context, arg data.TwitchBotCreate) (*data.TwitchBot, error) {
+func (s *BotService) BotCreate(ctx context.Context, arg data.PlatformBotCreate) (*data.PlatformBot, error) {
 	fromDB, err := s.storage.Query(ctx).TwitchBotCreate(ctx, arg.ToDB())
 	if err != nil {
 		s.logger.DebugContext(ctx, "cannot create bot", "err", err)
 		return nil, s.storage.HandleErr(ctx, err)
 	}
 
-	bot := data.NewTwitchBotFromDB(fromDB)
+	bot := data.NewPlatformBotFromDB(fromDB)
 
 	return &bot, nil
 }
 
-func (s *BotService) BotsGet(ctx context.Context, arg data.TwitchBotsGet) ([]data.TwitchBot, error) {
+func (s *BotService) BotsGet(ctx context.Context, arg data.PlatformBotsGet) ([]data.PlatformBot, error) {
 	fromDB, err := s.storage.Query(ctx).TwitchBotsGet(ctx, arg.ToDB())
 	if err != nil {
 		s.logger.ErrorContext(ctx, "cannot get twitch bots")
 		return nil, s.storage.HandleErr(ctx, err)
 	}
 
-	var bots []data.TwitchBot
+	var bots []data.PlatformBot
 	for _, bot := range fromDB {
-		bots = append(bots, data.NewTwitchBotFromDB(bot))
+		bots = append(bots, data.NewPlatformBotFromDB(bot))
 	}
 
 	return bots, nil
 }
 
-func (s *BotService) DefaultBotGet(ctx context.Context) (*data.TwitchDefaultBot, error) {
+func (s *BotService) DefaultBotGet(ctx context.Context) (*data.PlatformDefaultBot, error) {
 	fromDB, err := s.storage.Query(ctx).TwitchDefaultBotGet(ctx)
 	if err != nil {
 		s.logger.DebugContext(ctx, "cannot get default bot")
 		return nil, s.storage.HandleErr(ctx, err)
 	}
-	bot := data.NewTwitchDefaultBotFromDB(fromDB)
+	bot := data.NewPlatformDefaultBotFromDB(fromDB)
 
 	return &bot, nil
 }
@@ -208,18 +210,18 @@ func (s *BotService) DefaultBotChange(ctx context.Context, botID string) error {
 	return nil
 }
 
-func (s *BotService) SelectedBotGet(ctx context.Context, userID uuid.UUID) (*data.TwitchSelectedBot, error) {
+func (s *BotService) SelectedBotGet(ctx context.Context, userID uuid.UUID) (*data.PlatformSelectedBot, error) {
 	fromDB, err := s.storage.Query(ctx).TwitchSelectedBotGetByUserID(ctx, userID)
 	if err != nil {
 		s.logger.DebugContext(ctx, "cannot get selected bot")
 		return nil, s.storage.HandleErr(ctx, err)
 	}
-	bot := data.NewTwitchSelectedBotFromDB(fromDB)
+	bot := data.NewPlatformSelectedBotFromDB(fromDB)
 
 	return &bot, nil
 }
 
-func (s *BotService) SelectedBotChange(ctx context.Context, bot data.TwitchBot) (*data.TwitchSelectedBot, error) {
+func (s *BotService) SelectedBotChange(ctx context.Context, bot data.PlatformBot) (*data.PlatformSelectedBot, error) {
 	fromDB, err := s.storage.Query(ctx).TwitchSelectedBotChange(ctx, db.TwitchSelectedBotChangeParams{
 		UserID:        bot.UserID,
 		BotID:         bot.BotID,
@@ -230,7 +232,7 @@ func (s *BotService) SelectedBotChange(ctx context.Context, bot data.TwitchBot) 
 		return nil, s.storage.HandleErr(ctx, err)
 	}
 
-	selectedBot := data.NewTwitchSelectedBotFromDB(fromDB)
+	selectedBot := data.NewPlatformSelectedBotFromDB(fromDB)
 
 	return &selectedBot, nil
 }

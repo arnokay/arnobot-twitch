@@ -64,7 +64,7 @@ func main() {
 	services.TransactionService = sharedService.NewPgxTransactionService(app.db)
 	services.AuthModule = sharedService.NewAuthModule(app.msgBroker)
 	services.PlatformModule = sharedService.NewPlatformModuleOut(app.msgBroker)
-	services.HelixManager = sharedService.NewHelixManager(
+	services.HelixManager = service.NewHelixManager(
 		services.AuthModule,
 		config.Config.Twitch.ClientID,
 		config.Config.Twitch.ClientSecret,

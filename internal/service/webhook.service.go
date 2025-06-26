@@ -9,15 +9,14 @@ import (
 
 	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
-	"github.com/arnokay/arnobot-shared/data"
-	"github.com/arnokay/arnobot-shared/service"
+	sharedData "github.com/arnokay/arnobot-shared/data"
 	"github.com/nicklaw5/helix/v2"
 
 	"github.com/arnokay/arnobot-twitch/internal/config"
 )
 
 type WebhookService struct {
-	helixManager  *service.HelixManager
+	helixManager  *HelixManager
 	twitchService *TwitchService
 
 	logger *slog.Logger
@@ -27,7 +26,7 @@ type WebhookService struct {
 }
 
 func NewWebhookService(
-	helixManager *service.HelixManager,
+	helixManager *HelixManager,
 	twitchService *TwitchService,
 ) *WebhookService {
 	logger := applog.NewServiceLogger("webhook-service")
@@ -47,7 +46,7 @@ func NewWebhookService(
 
 func (s *WebhookService) canSubscribe(
 	ctx context.Context,
-	botProvider data.AuthProvider,
+	botProvider sharedData.AuthProvider,
 	event string,
 ) error {
 	requiredScopes, ok := s.webhookToScopes[event]
@@ -124,7 +123,7 @@ func (s *WebhookService) SubscribeChannelChatMessageBot(
 
 func (s *WebhookService) SubscribeChannelChatMessage(
 	ctx context.Context,
-	botProvider data.AuthProvider,
+	botProvider sharedData.AuthProvider,
 	broadcasterID string,
 ) error {
 	event := helix.EventSubTypeChannelChatMessage
@@ -241,23 +240,9 @@ func (s *WebhookService) UnsubscribeAllBot(
 	return nil
 }
 
-func (s *WebhookService) Subscribe(ctx context.Context, botProvider data.AuthProvider, broadcasterID string) error {
-	role, err := s.twitchService.GetBotChannelRole(ctx, botProvider, broadcasterID)
-	if err != nil {
-		return err
-	}
+func (s *WebhookService) Subscribe(ctx context.Context, botProvider sharedData.AuthProvider, broadcasterID string) error {
 
-	if role == data.TwitchBotRoleBroadcaster {
-		// TODO: implement
-	}
-	if role == data.TwitchBotRoleModerator {
-		// TODO: implement
-	}
-	if role == data.TwitchBotRoleVIP {
-		// TODO: implement
-	}
-
-	err = s.SubscribeChannelChatMessage(ctx, botProvider, broadcasterID)
+  err := s.SubscribeChannelChatMessage(ctx, botProvider, broadcasterID)
 	if err != nil {
 		return err
 	}

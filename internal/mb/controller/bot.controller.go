@@ -45,7 +45,6 @@ func (c *BotController) StartBot(msg *nats.Msg) {
 
 
 	payload.Decode(msg.Data)
-  c.logger.Debug("payload", "p", payload)
 
 	ctx, cancel := newControllerContext(payload.TraceID)
 	defer cancel()
