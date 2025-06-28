@@ -3,9 +3,8 @@ package data
 import (
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/arnokay/arnobot-shared/db"
+	"github.com/google/uuid"
 )
 
 type PlatformDefaultBot struct {
@@ -22,16 +21,18 @@ type PlatformSelectedBot struct {
 	UserID        uuid.UUID
 	BotID         string
 	BroadcasterID string
+	Enabled       bool
 	UpdatedAt     time.Time
 }
 
 func NewPlatformSelectedBotFromDB(fromDB db.TwitchSelectedBot) PlatformSelectedBot {
-  return PlatformSelectedBot{
-    UserID: fromDB.UserID,
-    BotID: fromDB.BotID,
-    BroadcasterID: fromDB.BroadcasterID,
-    UpdatedAt: fromDB.UpdatedAt,
-  }
+	return PlatformSelectedBot{
+		UserID:        fromDB.UserID,
+		BotID:         fromDB.BotID,
+		BroadcasterID: fromDB.BroadcasterID,
+		Enabled:       fromDB.Enabled,
+		UpdatedAt:     fromDB.UpdatedAt,
+	}
 }
 
 type PlatformBot struct {

@@ -43,7 +43,21 @@ func NewBotService(
 	}
 }
 
-func (s *BotService) StartBot(ctx context.Context, arg sharedData.PlatformToggleBot) error {
+func (s *BotService) SelectedBotChangeStatus(ctx context.Context, userID uuid.UUID, enable bool) error {
+	_, err := s.storage.Query(ctx).TwitchSelectedBotStatusChange(ctx, db.TwitchSelectedBotStatusChangeParams{
+		UserID:  userID,
+		Enabled: enable,
+	})
+	if err != nil {
+		s.logger.DebugContext(ctx, "cannot enable/disable bot", "err", err)
+		return s.storage.HandleErr(ctx, err)
+	}
+
+	return nil
+}
+
+
+func (s *BotService) StartBot(ctx context.Context, arg sharedData.PlatformBotToggle) error {
 	txCtx, err := s.txService.Begin(ctx)
 	defer s.txService.Rollback(txCtx)
 	if err != nil {
@@ -71,13 +85,17 @@ func (s *BotService) StartBot(ctx context.Context, arg sharedData.PlatformToggle
 	if err != nil {
 		return err
 	}
+	err = s.SelectedBotChangeStatus(ctx, arg.UserID, true)
+	if err != nil {
+		return err
+	}
 
 	s.twitchService.AppSendChannelMessage(ctx, selectedBot.BotID, selectedBot.BroadcasterID, "hi!", "")
 
 	return nil
 }
 
-func (s *BotService) StopBot(ctx context.Context, arg sharedData.PlatformToggleBot) error {
+func (s *BotService) StopBot(ctx context.Context, arg sharedData.PlatformBotToggle) error {
 	selectedBot, err := s.SelectedBotGet(ctx, arg.UserID)
 	if err != nil {
 		return err
