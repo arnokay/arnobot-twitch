@@ -1,15 +1,18 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/data"
 	"github.com/arnokay/arnobot-shared/pkg/assert"
 	sharedService "github.com/arnokay/arnobot-shared/service"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/nicklaw5/helix/v2"
 )
 
@@ -25,9 +28,14 @@ type HelixManager struct {
 	mu      sync.RWMutex
 
 	authModule *sharedService.AuthModule
+	cache      jetstream.KeyValue
 }
 
-func NewHelixManager(authModule *sharedService.AuthModule, clientID, clientSecret string) *HelixManager {
+func NewHelixManager(
+	cache jetstream.KeyValue,
+	authModule *sharedService.AuthModule,
+	clientID, clientSecret string,
+) *HelixManager {
 	logger := applog.NewServiceLogger("helix-manager")
 
 	appClient, err := helix.NewClient(&helix.Options{
@@ -96,10 +104,19 @@ func (hm *HelixManager) GetByProvider(ctx context.Context, provider data.AuthPro
 	})
 
 	client.OnUserAccessTokenRefreshed(func(newAccessToken, newRefreshToken string) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		// COMBAK: maybe set ttl?
+		hm.cache.Put(
+			ctx,
+			"cm.art."+provider.Provider+"."+provider.ProviderUserID,
+			bytes.Join([][]byte{[]byte(newAccessToken), []byte(newRefreshToken)}, []byte("...")),
+		)
 		hm.logger.InfoContext(ctx, "token refreshed", "providerUserID", provider.ProviderUserID)
-		err := hm.authModule.AuthProviderUpdateTokens(ctx, provider.ID, data.AuthProviderUpdateTokens{
+		err := hm.authModule.AuthProviderUpdateTokens(ctx, data.AuthProviderUpdateTokens{
+			ID:           provider.ID,
 			AccessToken:  newAccessToken,
-			RefreshToken: &newRefreshToken,
+			RefreshToken: newRefreshToken,
 		})
 		if err != nil {
 			hm.logger.ErrorContext(ctx, "failed to update tokens", "providerID", provider.ID, "providerUserID", provider.ProviderUserID)

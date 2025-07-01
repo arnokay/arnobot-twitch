@@ -6,6 +6,7 @@ import (
 
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/apptype"
+	"github.com/arnokay/arnobot-shared/events"
 	"github.com/arnokay/arnobot-shared/pkg/assert"
 	"github.com/arnokay/arnobot-shared/platform"
 	"github.com/arnokay/arnobot-shared/topics"
@@ -47,7 +48,7 @@ func (c *ChatController) Connect(conn *nats.Conn) {
 }
 
 func (c *ChatController) ChatMessageSend(msg *nats.Msg) {
-	var payload apptype.PlatformChatMessageSend
+	var payload apptype.Request[events.MessageSend]
 
 	payload.Decode(msg.Data)
 

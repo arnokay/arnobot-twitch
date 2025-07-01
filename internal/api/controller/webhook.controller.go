@@ -71,6 +71,7 @@ func (c *WebhookController) Callback(ctx echo.Context) error {
 		internalEvent := events.Message{
 			EventCommon: events.EventCommon{
 				Platform:      platform.Twitch,
+				UserID:        bot.UserID,
 				BroadcasterID: event.BroadcasterUserID,
 				BotID:         bot.BotID,
 			},

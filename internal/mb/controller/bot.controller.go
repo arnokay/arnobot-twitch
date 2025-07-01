@@ -45,8 +45,8 @@ func (c *BotController) Connect(conn *nats.Conn) {
 }
 
 func (c *BotController) GetBot(msg *nats.Msg) {
-	var payload apptype.PlatformBotGetRequest
-	var response apptype.PlatformBotGetResponse
+	var payload apptype.Request[data.PlatformBotGet]
+	var response apptype.Response[data.PlatformBot]
 
 	payload.Decode(msg.Data)
 
@@ -74,7 +74,7 @@ func (c *BotController) GetBot(msg *nats.Msg) {
 }
 
 func (c *BotController) StartBot(msg *nats.Msg) {
-	var payload apptype.PlatformStartBot
+	var payload apptype.Request[data.PlatformBotToggle]
 	var response apptype.EmptyResponse
 
 	payload.Decode(msg.Data)
@@ -97,7 +97,7 @@ func (c *BotController) StartBot(msg *nats.Msg) {
 }
 
 func (c *BotController) StopBot(msg *nats.Msg) {
-	var payload apptype.PlatformStopBot
+	var payload apptype.Request[data.PlatformBotToggle]
 	var response apptype.EmptyResponse
 
 	payload.Decode(msg.Data)

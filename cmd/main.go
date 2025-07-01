@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 
 	apiController "github.com/arnokay/arnobot-twitch/internal/api/controller"
 	apiMiddleware "github.com/arnokay/arnobot-twitch/internal/api/middleware"
@@ -31,6 +32,7 @@ type application struct {
 	api       *echo.Echo
 	db        *pgxpool.Pool
 	storage   storage.Storager
+	cache     jetstream.KeyValue
 
 	apiControllers *apiController.Contollers
 	apiMiddlewares *apiMiddleware.Middlewares
@@ -42,6 +44,8 @@ type application struct {
 
 func main() {
 	var app application
+
+	ctx := context.Background()
 
 	// load config
 	cfg := config.Load()
@@ -56,8 +60,9 @@ func main() {
 	app.storage = storage.NewStorage(app.db)
 
 	// load message broker
-	mbConn := openMB()
+	mbConn, _, kv := openMB(ctx)
 	app.msgBroker = mbConn
+	app.cache = kv
 
 	// load services
 	services := &service.Services{}
@@ -65,6 +70,7 @@ func main() {
 	services.AuthModule = sharedService.NewAuthModule(app.msgBroker)
 	services.PlatformModule = sharedService.NewPlatformModuleOut(app.msgBroker)
 	services.HelixManager = service.NewHelixManager(
+		app.cache,
 		services.AuthModule,
 		config.Config.Twitch.ClientID,
 		config.Config.Twitch.ClientSecret,
@@ -127,9 +133,16 @@ func openDB() *pgxpool.Pool {
 	return pool
 }
 
-func openMB() *nats.Conn {
+func openMB(ctx context.Context) (*nats.Conn, jetstream.JetStream, jetstream.KeyValue) {
 	nc, err := nats.Connect(config.Config.MB.URL)
 	assert.NoError(err, "openMB: cannot open message broker connection")
 
-	return nc
+	js, err := jetstream.New(nc)
+	assert.NoError(err, "openMB: cannot open jetstream")
+	kv, err := js.CreateKeyValue(ctx, jetstream.KeyValueConfig{
+		Bucket: "default-core",
+	})
+	assert.NoError(err, "openMB: cannot create KVstore")
+
+	return nc, js, kv
 }
