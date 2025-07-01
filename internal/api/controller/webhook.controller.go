@@ -13,6 +13,7 @@ import (
 	"github.com/nicklaw5/helix/v2"
 
 	"github.com/arnokay/arnobot-twitch/internal/api/middleware"
+	"github.com/arnokay/arnobot-twitch/internal/data"
 	"github.com/arnokay/arnobot-twitch/internal/service"
 )
 
@@ -84,6 +85,7 @@ func (c *WebhookController) Callback(ctx echo.Context) error {
 			ChatterID:        event.ChatterUserID,
 			ChatterName:      event.ChatterUserName,
 			ChatterLogin:     event.ChatterUserLogin,
+			ChatterRole:      data.GetChatterRole(event.Badges),
 		}
 
 		err = c.platformModule.ChatMessageNotify(ctx.Request().Context(), internalEvent)
