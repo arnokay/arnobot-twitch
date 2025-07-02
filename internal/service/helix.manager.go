@@ -12,6 +12,7 @@ import (
 	"github.com/arnokay/arnobot-shared/data"
 	"github.com/arnokay/arnobot-shared/pkg/assert"
 	sharedService "github.com/arnokay/arnobot-shared/service"
+	"github.com/arnokay/arnobot-shared/trace"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/nicklaw5/helix/v2"
 )
@@ -106,6 +107,7 @@ func (hm *HelixManager) GetByProvider(ctx context.Context, provider data.AuthPro
 	client.OnUserAccessTokenRefreshed(func(newAccessToken, newRefreshToken string) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+    ctx = trace.Context(ctx, trace.New())
 		// COMBAK: maybe set ttl?
 		hm.cache.Put(
 			ctx,
