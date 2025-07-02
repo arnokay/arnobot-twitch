@@ -139,8 +139,8 @@ func openMB(ctx context.Context) (*nats.Conn, jetstream.JetStream, jetstream.Key
 
 	js, err := jetstream.New(nc)
 	assert.NoError(err, "openMB: cannot open jetstream")
-	kv, err := js.CreateKeyValue(ctx, jetstream.KeyValueConfig{
-		Bucket: "default-core",
+	kv, err := js.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{
+		Bucket: "default-twitch",
 	})
 	assert.NoError(err, "openMB: cannot create KVstore")
 
