@@ -8,16 +8,16 @@ import (
 func GetChatterRole(badges []helix.EventSubChatBadge) data.ChatterRole {
 	role := data.ChatterPleb
 	for _, badge := range badges {
-		if badge.SetID == "subscriber" {
+		if badge.SetID == "subscriber" && role < data.ChatterSub {
 			role = data.ChatterSub
 		}
-		if badge.SetID == "vip" {
+		if badge.SetID == "vip" && role < data.ChatterVIP {
 			role = data.ChatterVIP
 		}
-		if badge.SetID == "moderator" {
+		if badge.SetID == "moderator" && role < data.ChatterModerator {
 			role = data.ChatterModerator
 		}
-		if badge.SetID == "broadcaster" {
+		if badge.SetID == "broadcaster" && role < data.ChatterModerator {
 			role = data.ChatterBroadcaster
 		}
 	}
