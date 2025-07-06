@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log/slog"
+	
 	"net/http"
 
 	"github.com/arnokay/arnobot-shared/applog"
@@ -18,7 +18,7 @@ import (
 )
 
 type Middlewares struct {
-	logger *slog.Logger
+	logger applog.Logger
 
 	AuthMiddlewares *middlewares.AuthMiddlewares
 }

@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"log/slog"
+	
 	"slices"
 	"sync"
 
@@ -19,7 +19,7 @@ type WebhookService struct {
 	helixManager  *HelixManager
 	twitchService *TwitchService
 
-	logger *slog.Logger
+	logger applog.Logger
 
 	webhookToScopes map[string][]string
 	callbackURL     string

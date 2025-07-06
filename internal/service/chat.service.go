@@ -1,10 +1,11 @@
 package service
 
 import (
-	"github.com/arnokay/arnobot-shared/db"
-	"github.com/arnokay/arnobot-shared/apperror"
 	"context"
-	"log/slog"
+
+	"github.com/arnokay/arnobot-shared/apperror"
+	"github.com/arnokay/arnobot-shared/applog"
+	"github.com/arnokay/arnobot-shared/db"
 
 	"github.com/nicklaw5/helix/v2"
 )
@@ -12,7 +13,7 @@ import (
 type ChatService struct {
 	helix *helix.Client
   querier db.Querier
-  logger *slog.Logger
+  logger applog.Logger
 }
 
 type TwitchUserIDGetter interface {

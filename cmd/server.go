@@ -135,6 +135,7 @@ func startAPIServer(a *application) error {
 	e := echo.New()
 
 	e.HideBanner = true
+  e.HidePort = true
 	a.api = e
 
 	e.Use(middlewares.AttachTraceID)
@@ -145,6 +146,7 @@ func startAPIServer(a *application) error {
 
 	e.HTTPErrorHandler = middlewares.ErrHandler
 
+	a.logger.Info("starting http server", "port", config.Config.Global.Port)
 	err := e.Start(fmt.Sprintf(":%v", config.Config.Global.Port))
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err

@@ -2,7 +2,7 @@ package controller
 
 import (
 	"encoding/json"
-	"log/slog"
+	
 	"strings"
 
 	"github.com/arnokay/arnobot-shared/applog"
@@ -18,7 +18,7 @@ import (
 )
 
 type WebhookController struct {
-	logger *slog.Logger
+	logger applog.Logger
 
 	middlewares *middleware.Middlewares
 

@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"log/slog"
+	
 
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/apptype"
@@ -17,7 +17,7 @@ import (
 type BotController struct {
 	botService *service.BotService
 
-	logger *slog.Logger
+	logger applog.Logger
 }
 
 func NewBotController(

@@ -2,7 +2,7 @@ package controller
 
 import (
 	"fmt"
-	"log/slog"
+	
 
 	"github.com/arnokay/arnobot-shared/applog"
 	"github.com/arnokay/arnobot-shared/apptype"
@@ -18,7 +18,7 @@ import (
 type ChatController struct {
 	twitchService *service.TwitchService
 
-	logger *slog.Logger
+	logger applog.Logger
 }
 
 func NewChatController(

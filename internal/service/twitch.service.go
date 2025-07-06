@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"log/slog"
+	
 
 	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
@@ -11,7 +11,7 @@ import (
 
 type TwitchService struct {
 	helixManager *HelixManager
-	logger       *slog.Logger
+	logger       applog.Logger
 }
 
 func NewTwitchService(

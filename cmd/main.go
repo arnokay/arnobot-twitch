@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log/slog"
+	
 	"os"
 	"time"
 
@@ -26,7 +26,7 @@ import (
 const AppName = "twitch"
 
 type application struct {
-	logger *slog.Logger
+	logger applog.Logger
 
 	msgBroker *nats.Conn
 	api       *echo.Echo
@@ -51,7 +51,8 @@ func main() {
 	cfg := config.Load()
 
 	// load logger
-	logger := applog.Init(AppName, os.Stdout, cfg.Global.LogLevel)
+	logger := applog.NewCharmLogger(os.Stdout, AppName, cfg.Global.LogLevel, nil)
+  applog.SetDefault(logger)
 	app.logger = logger
 
 	// load db
