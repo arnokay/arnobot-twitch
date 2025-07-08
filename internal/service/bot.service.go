@@ -80,10 +80,11 @@ func (s *BotService) StartBot(ctx context.Context, arg data.PlatformBotToggle) e
 		return err
 	}
 
-	err = s.whService.SubscribeChannelChatMessageBot(txCtx, selectedBot.BotID, selectedBot.BroadcasterID)
+	err = s.whService.SubscribeAll(txCtx, selectedBot.BotID, selectedBot.BroadcasterID)
 	if err != nil {
 		return err
 	}
+
 	err = s.SelectedBotChangeStatus(ctx, arg.UserID, true)
 	if err != nil {
 		return err

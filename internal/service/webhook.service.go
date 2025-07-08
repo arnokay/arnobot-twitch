@@ -2,24 +2,35 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/arnokay/arnobot-shared/apperror"
 	"github.com/arnokay/arnobot-shared/applog"
-	sharedData "github.com/arnokay/arnobot-shared/data"
 	"github.com/nicklaw5/helix/v2"
 
 	"github.com/arnokay/arnobot-twitch/internal/config"
 )
 
+type EventSubscriptionRequest struct {
+	EventType     string
+	BroadcasterID string
+	UserID        string
+	Version       string
+}
+
+type SubscriptionResult struct {
+	EventType string
+	Error     error
+}
+
 type WebhookService struct {
 	helixManager  *HelixManager
 	twitchService *TwitchService
-
-	logger applog.Logger
-
-	webhookToScopes map[string][]string
-	callbackURL     string
+	logger        applog.Logger
+	callbackURL   string
+	secret        string
 }
 
 func NewWebhookService(
@@ -28,251 +39,249 @@ func NewWebhookService(
 ) *WebhookService {
 	logger := applog.NewServiceLogger("webhook-service")
 
-	webhooksToScopes := map[string][]string{
-		helix.EventSubTypeChannelChatMessage: {"user:read:chat"},
-	}
-
 	return &WebhookService{
-		helixManager:    helixManager,
-		twitchService:   twitchService,
-		logger:          logger,
-		webhookToScopes: webhooksToScopes,
-		callbackURL:     config.Config.Webhooks.Callback,
+		helixManager:  helixManager,
+		twitchService: twitchService,
+		logger:        logger,
+		callbackURL:   config.Config.Webhooks.Callback,
+		secret:        config.Config.Webhooks.Secret,
 	}
 }
 
-func (s *WebhookService) SubscribeChannelChatMessageBot(
+func (s *WebhookService) createEventSubscription(
 	ctx context.Context,
-	botID,
-	broadcasterID string,
+	client *helix.Client,
+	req EventSubscriptionRequest,
 ) error {
-	client := s.helixManager.GetApp(ctx)
+	condition := helix.EventSubCondition{
+		BroadcasterUserID: req.BroadcasterID,
+		UserID:            req.UserID,
+	}
 
-	// TODO: handle response, 4xx is not considered as error, probably should handle those in helixManager
-	response, err := client.CreateEventSubSubscription(&helix.EventSubSubscription{
-		Type:    helix.EventSubTypeChannelChatMessage,
-		Version: "1",
-		Condition: helix.EventSubCondition{
-			BroadcasterUserID: broadcasterID,
-			UserID:            botID,
-		},
+  if req.Version == "" {
+    req.Version = "1"
+  }
+
+	subscription := &helix.EventSubSubscription{
+		Type:      req.EventType,
+		Version:   req.Version,
+		Condition: condition,
 		Transport: helix.EventSubTransport{
 			Method:   "webhook",
 			Callback: s.callbackURL,
-			Secret:   config.Config.Webhooks.Secret,
+			Secret:   s.secret,
 		},
-	})
+	}
 
-	if err != nil || response.StatusCode >= 400 {
-		s.logger.ErrorContext(
-			ctx,
-			"cannot create subscription",
+	response, err := client.CreateEventSubSubscription(subscription)
+	if err != nil {
+		return apperror.New(apperror.CodeExternal, "failed to create event subscription", err)
+	}
+
+	if response.StatusCode >= 400 {
+		return apperror.New(apperror.CodeExternal, fmt.Sprintf("subscription failed with status %d: %s", response.StatusCode, response.ErrorMessage), nil)
+	}
+
+	return nil
+}
+
+func (s *WebhookService) SubscribeChannelChatMessage(ctx context.Context, botID, broadcasterID string) error {
+	client := s.helixManager.GetApp(ctx)
+
+	err := s.createEventSubscription(ctx, client, EventSubscriptionRequest{
+		EventType:     helix.EventSubTypeChannelChatMessage,
+		BroadcasterID: broadcasterID,
+		UserID:        botID,
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "cannot create chat message subscription",
 			"err", err,
-			"err_msg", response.ErrorMessage,
-			"event", helix.EventSubTypeChannelChatMessage,
 			"botID", botID,
 			"broadcasterID", broadcasterID,
 		)
-		return apperror.ErrExternal
+		return apperror.New(apperror.CodeExternal, "failed to subscribe to chat messages", err)
 	}
 
 	return nil
 }
 
-func (s *WebhookService) SubscribeStreamOnline(
-	ctx context.Context,
-	botProvider sharedData.AuthProvider,
-	broadcasterID string,
-) error {
-	event := helix.EventSubTypeStreamOnline
+func (s *WebhookService) SubscribeStreamOnline(ctx context.Context, broadcasterID string) error {
+	client := s.helixManager.GetApp(ctx)
 
-	client := s.helixManager.GetByProvider(ctx, botProvider)
-
-	_, err := client.CreateEventSubSubscription(&helix.EventSubSubscription{
-		Type:    event,
-		Version: "1",
-		Condition: helix.EventSubCondition{
-			BroadcasterUserID: broadcasterID,
-		},
-		Transport: helix.EventSubTransport{
-			Method:   "webhook",
-			Callback: s.callbackURL,
-			Secret:   config.Config.Webhooks.Secret,
-		},
+	err := s.createEventSubscription(ctx, client, EventSubscriptionRequest{
+		EventType:     helix.EventSubTypeStreamOnline,
+		BroadcasterID: broadcasterID,
 	})
 	if err != nil {
-		s.logger.ErrorContext(ctx, "cannot subscribe to event", "err", err, "broadcaster_id", broadcasterID, "event", event)
-		return apperror.ErrInternal
-	}
-
-	return nil
-}
-
-func (s *WebhookService) SubscribeStreamOffline(
-	ctx context.Context,
-	botProvider sharedData.AuthProvider,
-	broadcasterID string,
-) error {
-	event := helix.EventSubTypeStreamOffline
-
-	client := s.helixManager.GetByProvider(ctx, botProvider)
-
-	_, err := client.CreateEventSubSubscription(&helix.EventSubSubscription{
-		Type:    event,
-		Version: "1",
-		Condition: helix.EventSubCondition{
-			BroadcasterUserID: broadcasterID,
-		},
-		Transport: helix.EventSubTransport{
-			Method:   "webhook",
-			Callback: s.callbackURL,
-			Secret:   config.Config.Webhooks.Secret,
-		},
-	})
-	if err != nil {
-		s.logger.ErrorContext(ctx, "cannot subscribe to event", "err", err, "broadcaster_id", broadcasterID, "event", event)
-		return apperror.ErrInternal
-	}
-
-	return nil
-}
-
-func (s *WebhookService) SubscribeChannelChatMessage(
-	ctx context.Context,
-	botProvider sharedData.AuthProvider,
-	broadcasterID string,
-) error {
-	event := helix.EventSubTypeChannelChatMessage
-
-	client := s.helixManager.GetByProvider(ctx, botProvider)
-
-	_, err := client.CreateEventSubSubscription(&helix.EventSubSubscription{
-		Type:    event,
-		Version: "1",
-		Condition: helix.EventSubCondition{
-			BroadcasterUserID: broadcasterID,
-			UserID:            botProvider.ProviderUserID,
-		},
-		Transport: helix.EventSubTransport{
-			Method:   "webhook",
-			Callback: s.callbackURL,
-			Secret:   config.Config.Webhooks.Secret,
-		},
-	})
-	if err != nil {
-		s.logger.ErrorContext(
-			ctx,
-			"cannot create subscription",
+		s.logger.ErrorContext(ctx, "cannot create stream online subscription",
 			"err", err,
-			"event", helix.EventSubTypeChannelChatMessage,
-			"botID", botProvider.ProviderUserID,
 			"broadcasterID", broadcasterID,
 		)
-		return apperror.ErrExternal
+		return apperror.New(apperror.CodeExternal, "failed to subscribe to stream online events", err)
 	}
 
 	return nil
 }
 
-func (s *WebhookService) Unsubscribe(
-	ctx context.Context,
-	subscriptionID string,
-) error {
+func (s *WebhookService) SubscribeStreamOffline(ctx context.Context, broadcasterID string) error {
+	client := s.helixManager.GetApp(ctx)
+
+	err := s.createEventSubscription(ctx, client, EventSubscriptionRequest{
+		EventType:     helix.EventSubTypeStreamOffline,
+		BroadcasterID: broadcasterID,
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "cannot create stream offline subscription",
+			"err", err,
+			"broadcasterID", broadcasterID,
+		)
+		return apperror.New(apperror.CodeExternal, "failed to subscribe to stream offline events", err)
+	}
+
+	return nil
+}
+
+func (s *WebhookService) Unsubscribe(ctx context.Context, subscriptionID string) error {
 	client := s.helixManager.GetApp(ctx)
 
 	response, err := client.RemoveEventSubSubscription(subscriptionID)
-	if err != nil || response.StatusCode >= 400 {
-		s.logger.ErrorContext(
-			ctx,
-			"cannot unsubscribe",
+	if err != nil {
+		return apperror.New(apperror.CodeExternal, "failed to remove event subscription", err)
+	}
+
+	if response.StatusCode >= 400 {
+		s.logger.ErrorContext(ctx, "cannot unsubscribe",
 			"err", err,
 			"err_msg", response.ErrorMessage,
 			"subscription_id", subscriptionID,
 		)
-		return apperror.ErrExternal
+		return apperror.New(apperror.CodeExternal, fmt.Sprintf("unsubscribe failed with status %d: %s", response.StatusCode, response.ErrorMessage), nil)
 	}
 
 	return nil
 }
 
-func (s *WebhookService) UnsubscribeAllBot(
-	ctx context.Context,
-	botID,
-	broadcasterID string,
-) error {
+func (s *WebhookService) UnsubscribeAllBot(ctx context.Context, botID, broadcasterID string) error {
 	client := s.helixManager.GetApp(ctx)
 
-	var subIds []string
+	subscriptionIDs, err := s.getSubscriptionIDs(ctx, client, botID, broadcasterID)
+	if err != nil {
+		return apperror.New(apperror.CodeExternal, "failed to get subscription IDs", err)
+	}
 
+	if len(subscriptionIDs) == 0 {
+		s.logger.DebugContext(ctx, "no subscriptions to unsubscribe")
+		return nil
+	}
+
+	return s.unsubscribeAll(ctx, subscriptionIDs)
+}
+
+func (s *WebhookService) getSubscriptionIDs(ctx context.Context, client *helix.Client, botID, broadcasterID string) ([]string, error) {
+	var subscriptionIDs []string
 	var cursor string
+
 	for {
 		subs, err := client.GetEventSubSubscriptions(&helix.EventSubSubscriptionsParams{
 			UserID: botID,
 			After:  cursor,
 		})
-		if err != nil || subs.StatusCode >= 400 {
-			s.logger.ErrorContext(ctx, "error getting eventsub subscriptions", "err", err, "err_msg", subs.ErrorMessage)
-			return apperror.ErrExternal
+		if err != nil {
+			return nil, apperror.New(apperror.CodeExternal, "failed to get event subscriptions", err)
+		}
+
+		if subs.StatusCode >= 400 {
+			return nil, apperror.New(apperror.CodeExternal, fmt.Sprintf("failed to get subscriptions with status %d: %s", subs.StatusCode, subs.ErrorMessage), nil)
 		}
 
 		if len(subs.Data.EventSubSubscriptions) == 0 {
-			s.logger.DebugContext(ctx, "no more eventsub subscriptions")
 			break
 		}
 
 		for _, sub := range subs.Data.EventSubSubscriptions {
 			if sub.Condition.BroadcasterUserID == broadcasterID {
-				subIds = append(subIds, sub.ID)
+				subscriptionIDs = append(subscriptionIDs, sub.ID)
 			}
 		}
 
 		if subs.Data.Pagination.Cursor == "" {
-			s.logger.DebugContext(ctx, "no more eventsub subscriptions")
 			break
 		}
 
 		cursor = subs.Data.Pagination.Cursor
 	}
 
-	wg := sync.WaitGroup{}
-	wg.Add(len(subIds))
-	for _, id := range subIds {
-		go func() {
-			err := s.Unsubscribe(ctx, id)
-			if err != nil {
-				s.logger.ErrorContext(ctx, "failed to unsubscribe", "err", err)
+	return subscriptionIDs, nil
+}
+
+func (s *WebhookService) unsubscribeAll(ctx context.Context, subscriptionIDs []string) error {
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(subscriptionIDs))
+
+	for _, id := range subscriptionIDs {
+		wg.Add(1)
+		go func(subscriptionID string) {
+			defer wg.Done()
+			if err := s.Unsubscribe(ctx, subscriptionID); err != nil {
+				errChan <- apperror.New(apperror.CodeExternal, fmt.Sprintf("failed to unsubscribe %s", subscriptionID), err)
 			}
-			wg.Done()
-		}()
+		}(id)
 	}
+
 	wg.Wait()
+	close(errChan)
+
+	var errs []error
+	for err := range errChan {
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		s.logger.ErrorContext(ctx, "some unsubscriptions failed", "failed_count", len(errs))
+		return apperror.New(apperror.CodeExternal, "some unsubscriptions failed", errors.Join(errs...))
+	}
 
 	return nil
 }
 
-func (s *WebhookService) Subscribe(
-	ctx context.Context,
-	botProvider sharedData.AuthProvider,
-	broadcasterID string,
-) error {
-  var errs []error
-	err := s.SubscribeChannelChatMessage(ctx, botProvider, broadcasterID)
-	if err != nil {
-		errs = append(errs, err)
+func (s *WebhookService) SubscribeAll(ctx context.Context, botID string, broadcasterID string) error {
+	subscriptions := []struct {
+		name string
+		fn   func() error
+	}{
+		{"chat_message", func() error { return s.SubscribeChannelChatMessage(ctx, botID, broadcasterID) }},
+		{"stream_online", func() error { return s.SubscribeStreamOnline(ctx, broadcasterID) }},
+		{"stream_offline", func() error { return s.SubscribeStreamOffline(ctx, broadcasterID) }},
 	}
-  err = s.SubscribeStreamOnline(ctx, botProvider, broadcasterID)
-  if err != nil {
-    errs = append(errs, err)
-  }
-  err = s.SubscribeStreamOffline(ctx, botProvider, broadcasterID)
-  if err != nil {
-    errs = append(errs, err)
-  }
 
-  if len(errs) != 0 {
-    s.logger.ErrorContext(ctx, "cannot subscribe to all of them", "missed_subscriptions", len(errs))
-    return apperror.ErrExternal
-  }
+	var results []SubscriptionResult
+	for _, sub := range subscriptions {
+		err := sub.fn()
+		results = append(results, SubscriptionResult{
+			EventType: sub.name,
+			Error:     err,
+		})
+	}
+
+	var failedSubs []string
+	for _, result := range results {
+		if result.Error != nil {
+			failedSubs = append(failedSubs, result.EventType)
+		}
+	}
+
+	if len(failedSubs) > 0 {
+		s.logger.ErrorContext(ctx, "failed to subscribe to some events",
+			"failed_subscriptions", failedSubs,
+			"total_failed", len(failedSubs),
+		)
+		return apperror.New(apperror.CodeExternal, "failed to subscribe to some events", nil)
+	}
+
+	s.logger.InfoContext(ctx, "successfully subscribed to all events",
+		"botID", botID,
+		"broadcasterID", broadcasterID,
+	)
 
 	return nil
 }
