@@ -2,9 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
-	
-	"slices"
 	"sync"
 
 	"github.com/arnokay/arnobot-shared/apperror"
@@ -44,43 +41,6 @@ func NewWebhookService(
 	}
 }
 
-func (s *WebhookService) canSubscribe(
-	ctx context.Context,
-	botProvider sharedData.AuthProvider,
-	event string,
-) error {
-	requiredScopes, ok := s.webhookToScopes[event]
-	if !ok {
-		return nil
-	}
-
-	missingScopes := make([]string, len(requiredScopes))
-
-	for _, scope := range requiredScopes {
-		if !slices.Contains(botProvider.Scopes, scope) {
-			missingScopes = append(missingScopes, scope)
-		}
-	}
-
-	if len(missingScopes) != 0 {
-		s.logger.ErrorContext(
-			ctx,
-			"cannot subscribe to channel.chat.message, missing scope",
-			"botID", botProvider.ProviderUserID,
-			"botScopes", botProvider.Scopes,
-			"webhookScopes", requiredScopes,
-			"missingScopes", missingScopes,
-		)
-		return apperror.New(
-			apperror.CodeForbidden,
-			fmt.Sprintf("cannot subscribe user to %s because user missing scopes: %v", event, missingScopes),
-			nil,
-		)
-	}
-
-	return nil
-}
-
 func (s *WebhookService) SubscribeChannelChatMessageBot(
 	ctx context.Context,
 	botID,
@@ -102,8 +62,6 @@ func (s *WebhookService) SubscribeChannelChatMessageBot(
 			Secret:   config.Config.Webhooks.Secret,
 		},
 	})
-	s.logger.DebugContext(ctx, "response", "response", response)
-	s.logger.DebugContext(ctx, "err", "err", err)
 
 	if err != nil || response.StatusCode >= 400 {
 		s.logger.ErrorContext(
@@ -121,6 +79,64 @@ func (s *WebhookService) SubscribeChannelChatMessageBot(
 	return nil
 }
 
+func (s *WebhookService) SubscribeStreamOnline(
+	ctx context.Context,
+	botProvider sharedData.AuthProvider,
+	broadcasterID string,
+) error {
+	event := helix.EventSubTypeStreamOnline
+
+	client := s.helixManager.GetByProvider(ctx, botProvider)
+
+	_, err := client.CreateEventSubSubscription(&helix.EventSubSubscription{
+		Type:    event,
+		Version: "1",
+		Condition: helix.EventSubCondition{
+			BroadcasterUserID: broadcasterID,
+		},
+		Transport: helix.EventSubTransport{
+			Method:   "webhook",
+			Callback: s.callbackURL,
+			Secret:   config.Config.Webhooks.Secret,
+		},
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "cannot subscribe to event", "err", err, "broadcaster_id", broadcasterID, "event", event)
+		return apperror.ErrInternal
+	}
+
+	return nil
+}
+
+func (s *WebhookService) SubscribeStreamOffline(
+	ctx context.Context,
+	botProvider sharedData.AuthProvider,
+	broadcasterID string,
+) error {
+	event := helix.EventSubTypeStreamOffline
+
+	client := s.helixManager.GetByProvider(ctx, botProvider)
+
+	_, err := client.CreateEventSubSubscription(&helix.EventSubSubscription{
+		Type:    event,
+		Version: "1",
+		Condition: helix.EventSubCondition{
+			BroadcasterUserID: broadcasterID,
+		},
+		Transport: helix.EventSubTransport{
+			Method:   "webhook",
+			Callback: s.callbackURL,
+			Secret:   config.Config.Webhooks.Secret,
+		},
+	})
+	if err != nil {
+		s.logger.ErrorContext(ctx, "cannot subscribe to event", "err", err, "broadcaster_id", broadcasterID, "event", event)
+		return apperror.ErrInternal
+	}
+
+	return nil
+}
+
 func (s *WebhookService) SubscribeChannelChatMessage(
 	ctx context.Context,
 	botProvider sharedData.AuthProvider,
@@ -128,14 +144,10 @@ func (s *WebhookService) SubscribeChannelChatMessage(
 ) error {
 	event := helix.EventSubTypeChannelChatMessage
 
-	if err := s.canSubscribe(ctx, botProvider, event); err != nil {
-		return err
-	}
-
 	client := s.helixManager.GetByProvider(ctx, botProvider)
 
 	_, err := client.CreateEventSubSubscription(&helix.EventSubSubscription{
-		Type:    helix.EventSubTypeChannelChatMessage,
+		Type:    event,
 		Version: "1",
 		Condition: helix.EventSubCondition{
 			BroadcasterUserID: broadcasterID,
@@ -158,8 +170,6 @@ func (s *WebhookService) SubscribeChannelChatMessage(
 		)
 		return apperror.ErrExternal
 	}
-
-	// TODO: should save subscription? also probably secret must be per subscription
 
 	return nil
 }
@@ -240,12 +250,29 @@ func (s *WebhookService) UnsubscribeAllBot(
 	return nil
 }
 
-func (s *WebhookService) Subscribe(ctx context.Context, botProvider sharedData.AuthProvider, broadcasterID string) error {
-
-  err := s.SubscribeChannelChatMessage(ctx, botProvider, broadcasterID)
+func (s *WebhookService) Subscribe(
+	ctx context.Context,
+	botProvider sharedData.AuthProvider,
+	broadcasterID string,
+) error {
+  var errs []error
+	err := s.SubscribeChannelChatMessage(ctx, botProvider, broadcasterID)
 	if err != nil {
-		return err
+		errs = append(errs, err)
 	}
+  err = s.SubscribeStreamOnline(ctx, botProvider, broadcasterID)
+  if err != nil {
+    errs = append(errs, err)
+  }
+  err = s.SubscribeStreamOffline(ctx, botProvider, broadcasterID)
+  if err != nil {
+    errs = append(errs, err)
+  }
+
+  if len(errs) != 0 {
+    s.logger.ErrorContext(ctx, "cannot subscribe to all of them", "missed_subscriptions", len(errs))
+    return apperror.ErrExternal
+  }
 
 	return nil
 }
