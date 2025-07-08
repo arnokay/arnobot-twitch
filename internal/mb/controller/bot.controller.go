@@ -45,32 +45,7 @@ func (c *BotController) Connect(conn *nats.Conn) {
 }
 
 func (c *BotController) GetBot(msg *nats.Msg) {
-	var payload apptype.Request[data.PlatformBotGet]
-	var response apptype.Response[data.PlatformBot]
-
-	payload.Decode(msg.Data)
-
-	ctx, cancel := newControllerContext(payload.TraceID)
-	defer cancel()
-
-	bot, err := c.botService.SelectedBotGet(ctx, payload.Data.UserID)
-	if err != nil {
-		c.logger.DebugContext(ctx, "cannot get selected bot", "err", err)
-		response.ToFailErr(err)
-		b, _ := response.Encode()
-		err := msg.Respond(b)
-		c.logger.DebugContext(ctx, "cannot respond", "err", err)
-		return
-	}
-
-	response.ToSuccess(data.PlatformBot{
-		Platform: platform.Twitch,
-		BotID:    bot.BotID,
-		UserID:   bot.UserID,
-		Enabled:  bot.Enabled,
-	})
-	b, _ := response.Encode()
-	msg.Respond(b)
+  handleRequest(msg, c.botService.SelectedBotGet)
 }
 
 func (c *BotController) StartBot(msg *nats.Msg) {

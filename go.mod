@@ -3,7 +3,7 @@ module github.com/arnokay/arnobot-twitch
 go 1.24.4
 
 require (
-	github.com/arnokay/arnobot-shared v0.1.1-0.20250706202612-7d2d33174fa7
+	github.com/arnokay/arnobot-shared v0.1.1-0.20250708203729-81662fe62b75
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/labstack/echo/v4 v4.13.3
